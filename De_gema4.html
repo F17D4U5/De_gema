@@ -179,7 +179,7 @@
     </div>
 
     <script>
-        // Mendapatkan elemen canvas dan konteks gambar 2D
+        // Get canvas and 2D context
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const infoBox = document.getElementById('infoBox');
@@ -188,19 +188,19 @@
         const taxRateSlider = document.getElementById('taxRateSlider');
         const taxRateDisplay = document.getElementById('taxRateDisplay');
 
-        // Mendapatkan tombol kontrol gerak baru
+        // Get new movement control buttons
         const upButton = document.getElementById('upButton');
         const downButton = document.getElementById('downButton');
         const leftButton = document.getElementById('leftButton');
         const rightButton = document.getElementById('rightButton');
 
-        // Mendapatkan elemen modal dan tombol restart
+        // Get modal elements and restart button
         const guideButton = document.getElementById('guideButton');
         const guideModal = document.getElementById('guideModal');
         const closeModalButton = document.getElementById('closeModal');
         const restartButton = document.getElementById('restartButton');
 
-        // Menyesuaikan ukuran canvas agar responsif
+        // Adjust canvas size for responsiveness
         function resizeCanvas() {
             canvas.width = Math.min(800, window.innerWidth - 40);
             canvas.height = canvas.width * 0.75;
@@ -208,22 +208,26 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // Variabel-variabel game
+        // Game variables
         const gridSize = 40;
         let mapOffset = { x: 0, y: 0 };
-        let buildings = []; // Gunakan let agar bisa diatur ulang
-        let mode = 'move'; // 'move', 'build', atau 'destroy'
+        let buildings = []; 
+        let mode = 'move'; 
         let buildingType = 'house';
 
-        // Sistem mata uang dan populasi
+        // Currency and population system
         let money = 1000.00;
         let population = 0;
         let lastIncomeTime = Date.now();
         const incomeInterval = 1000;
         let taxRate = parseInt(taxRateSlider.value);
         const incomePerPersonPerSecond = 10;
+        
+        // --- NEW INFLUENCE RADIUS VARIABLE ---
+        const influenceRadiusInBlocks = 10; // The new influence radius in blocks
+        // The previous value was 3. You can change this to 10 or any other number.
 
-        // Biaya dan Pendapatan Bangunan
+        // Building costs and stats
         const buildingStats = {
             house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
             park: { cost: 50, name: 'Taman', color: '#22c55e' },
@@ -234,19 +238,19 @@
         const moveButtonColor = '#3b82f6';
         const destroyButtonColor = '#ef4444';
 
-        // Objek pemain
+        // Player object
         const player = {
-            x: 0,
-            y: 0,
+            x: 100,
+            y: 1000,
             width: gridSize * 0.7,
             height: gridSize * 0.7,
             speed: 5,
-            color: '#ef4444' // Merah
+            color: '#ef4444' // Red
         };
         
-        // Fungsi untuk mereset semua variabel game ke kondisi awal
+        // Function to reset all game variables to their initial state
         function restartGame() {
-            // Reset variabel game
+            // Reset game variables
             money = 1000.00;
             population = 0;
             buildings = [];
@@ -258,15 +262,15 @@
             taxRateSlider.value = 5;
             taxRate = 5;
             
-            // Perbarui UI
+            // Update UI
             updateUI();
             updateAllButtons();
         }
 
         /**
-         * Mengubah angka menjadi format mata uang Rupiah dengan desimal
-         * @param {number} amount - Jumlah uang
-         * @returns {string} - Teks dengan format Rp.
+         * Converts a number to Rupiah currency format with decimals.
+         * @param {number} amount - The amount of money.
+         * @returns {string} - The formatted text with Rp. prefix.
          */
         function formatRupiah(amount) {
             return new Intl.NumberFormat('id-ID', {
@@ -277,21 +281,21 @@
             }).format(amount);
         }
 
-        // Fungsi untuk memperbarui tampilan uang dan populasi
+        // Function to update the money and population display
         function updateUI() {
             moneyDisplay.textContent = formatRupiah(money);
             populationDisplay.textContent = population;
             taxRateDisplay.textContent = taxRate;
         }
 
-        // Fungsi untuk menggambar kotak bergaris (grid)
+        // Function to draw the grid
         function drawGrid() {
             ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 1;
             const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
             const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
 
-            // Menggambar garis vertikal
+            // Draw vertical lines
             for (let x = 0; x < screenGridSizeX; x++) {
                 const drawX = (x * gridSize) - (mapOffset.x % gridSize);
                 ctx.beginPath();
@@ -300,7 +304,7 @@
                 ctx.stroke();
             }
 
-            // Menggambar garis horizontal
+            // Draw horizontal lines
             for (let y = 0; y < screenGridSizeY; y++) {
                 const drawY = (y * gridSize) - (mapOffset.y % gridSize);
                 ctx.beginPath();
@@ -310,20 +314,20 @@
             }
         }
 
-        // Fungsi untuk menggambar bangunan
+        // Function to draw buildings
         function drawBuildings() {
             buildings.forEach(building => {
                 const drawX = building.x - mapOffset.x;
                 const drawY = building.y - mapOffset.y;
 
                 if (drawX + gridSize < 0 || drawX > canvas.width || drawY + gridSize < 0 || drawY > canvas.height) {
-                    return; // Lewati jika di luar layar
+                    return; // Skip if off-screen
                 }
                 
                 ctx.fillStyle = building.color;
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 
-                // Tambahkan garis luar kecuali untuk jalan
+                // Add an outline, except for roads
                 if (building.type !== 'road') {
                     ctx.strokeStyle = '#334155';
                     ctx.strokeRect(drawX, drawY, gridSize, gridSize);
@@ -331,9 +335,9 @@
             });
         }
         
-        // Fungsi untuk mengecek apakah sebuah ubin terhubung ke jalan
+        // Function to check if a tile is connected to a road
         function isConnectedToRoad(tileX, tileY) {
-            // Periksa 4 arah (atas, bawah, kiri, kanan)
+            // Check 4 directions (up, down, left, right)
             const adjacentTiles = [
                 { x: tileX, y: tileY - 1 },
                 { x: tileX, y: tileY + 1 },
@@ -354,29 +358,30 @@
             return false;
         }
 
-        // Fungsi untuk menghitung kebutuhan warga berdasarkan bangunan di sekitarnya
+        // Function to calculate citizen needs based on nearby buildings
         function calculateNeeds() {
             buildings.forEach(building => {
                 const tileX = Math.floor(building.x / gridSize);
                 const tileY = Math.floor(building.y / gridSize);
                 const isConnected = isConnectedToRoad(tileX, tileY);
                 
+                // --- MODIFIED INFLUENCE RADIUS CHECK ---
                 const nearbyBuildings = buildings.filter(b => {
                     const distanceX = Math.abs(building.x - b.x);
                     const distanceY = Math.abs(building.y - b.y);
-                    return b.id !== building.id && distanceX <= gridSize * 3 && distanceY <= gridSize * 3;
+                    return b.id !== building.id && distanceX <= gridSize * influenceRadiusInBlocks && distanceY <= gridSize * influenceRadiusInBlocks;
                 });
                 
-                // Logika untuk rumah
+                // Logic for houses
                 if (building.type === 'house') {
                     const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
                     let happinessBonus = nearbyParks * 15;
                     
                     if (isConnected) {
-                        happinessBonus += 30; // Bonus besar untuk koneksi jalan
+                        happinessBonus += 30; // Big bonus for road connection
                     }
 
-                    // Pengurangan kebahagiaan karena pajak
+                    // Happiness reduction due to tax
                     let taxPenalty = 0;
                     if (taxRate > 10) {
                         taxPenalty = (taxRate - 10) * 2;
@@ -386,13 +391,13 @@
                     building.needs.happiness = Math.max(0, Math.min(100, Math.floor(happinessBonus + 50)));
                 }
                 
-                // Logika untuk toko
+                // Logic for stores
                 if (building.type === 'store') {
                     const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
                     let profitabilityBonus = nearbyHouses * 20;
 
                     if (isConnected) {
-                        profitabilityBonus += 40; // Bonus besar untuk koneksi jalan
+                        profitabilityBonus += 40; // Big bonus for road connection
                     }
                     
                     if (population === 0) {
@@ -402,13 +407,13 @@
                     building.needs.profitability = Math.min(100, profitabilityBonus);
                 }
 
-                // Logika untuk industri
+                // Logic for industrial
                 if (building.type === 'industrial') {
                      const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
                     let profitabilityBonus = nearbyHouses * 20;
 
                     if (isConnected) {
-                        profitabilityBonus += 40; // Bonus besar untuk koneksi jalan
+                        profitabilityBonus += 40; // Big bonus for road connection
                     }
 
                     if (population === 0) {
@@ -420,7 +425,7 @@
             });
         }
 
-        // Fungsi untuk menggambar pemain
+        // Function to draw the player
         function drawPlayer() {
             const playerScreenX = player.x - mapOffset.x;
             const playerScreenY = player.y - mapOffset.y;
@@ -428,7 +433,7 @@
             ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
         }
 
-        // Variabel untuk melacak status kontrol gerak
+        // Variables to track movement control status
         let keys = {};
         let touchControls = {
             up: false,
@@ -437,7 +442,7 @@
             right: false
         };
 
-        // Fungsi untuk menangani input keyboard
+        // Function to handle keyboard input
         document.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             const key = e.key.toLowerCase();
@@ -467,14 +472,14 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Event listener untuk penggeser pajak
+        // Event listener for tax rate slider
         taxRateSlider.addEventListener('input', (e) => {
             taxRate = parseInt(e.target.value);
             taxRateDisplay.textContent = taxRate;
-            calculateNeeds(); // Perbarui kebahagiaan secara real-time saat pajak diubah
+            calculateNeeds(); // Update happiness in real-time as tax changes
         });
 
-        // Tangani event sentuh pada tombol gerak
+        // Handle touch events on movement buttons
         function setupTouchControls() {
             const controls = {
                 up: upButton, down: downButton, left: leftButton, right: rightButton
@@ -494,7 +499,7 @@
         }
         setupTouchControls();
         
-        // --- LOGIKA POPULASI YANG SANGAT JELAS BERDASARKAN ATURAN PENGGUNA ---
+        // --- FINALIZED POPULATION LOGIC BASED ON USER RULES ---
         function checkPopulationChange() {
             const houseBuildings = buildings.filter(b => b.type === 'house');
             
@@ -502,64 +507,64 @@
                 let changeAmount = 0;
                 let logMessage = '';
 
-                // Logika berdasarkan Zona Pajak
+                // Logic based on tax zone
                 if (taxRate <= 20) {
-                    // Zona 0-20%: Populasi pasti bertambah
-                    changeAmount = Math.floor(Math.random() * 2) + 1; // Bertambah 1 atau 2
-                    logMessage = `populasi bertambah karena pajak rendah`;
+                    // 0-20% zone: Population definitely increases
+                    changeAmount = Math.floor(Math.random() * 2) + 1; // Increases by 1 or 2
+                    logMessage = `population increases due to low taxes`;
                 } else if (taxRate <= 45) {
-                    // Zona 21-45%: Zona Abu-abu
-                    const increaseChance = (45 - taxRate) / 25; // Peluang menurun dari 100% (pajak 20) ke 0% (pajak 45)
-                    const decreaseChance = (taxRate - 20) / 25; // Peluang meningkat dari 0% (pajak 20) ke 100% (pajak 45)
+                    // 21-45% zone: Gray area
+                    const increaseChance = (45 - taxRate) / 25; // Chance decreases from 100% (tax 20) to 0% (tax 45)
+                    const decreaseChance = (taxRate - 20) / 25; // Chance increases from 0% (tax 20) to 100% (tax 45)
                     
                     if (Math.random() < increaseChance) {
                         changeAmount += Math.floor(Math.random() * 2) + 1;
-                        logMessage = `mendapatkan ${changeAmount} penghuni baru`;
+                        logMessage = `gained ${changeAmount} new residents`;
                     }
                     
                     if (Math.random() < decreaseChance) {
                         changeAmount -= Math.floor(Math.random() * 2) + 1;
-                        logMessage = `kehilangan ${Math.abs(changeAmount)} penghuni`;
+                        logMessage = `lost ${Math.abs(changeAmount)} residents`;
                     }
                 } else {
-                    // Zona 46-50%: Populasi pasti berkurang
-                    changeAmount = -(Math.floor(Math.random() * 2) + 1); // Berkurang 1 atau 2
-                    logMessage = `populasi berkurang karena pajak sangat tinggi`;
+                    // 46-50% zone: Population definitely decreases
+                    changeAmount = -(Math.floor(Math.random() * 2) + 1); // Decreases by 1 or 2
+                    logMessage = `population decreases due to very high taxes`;
                 }
                 
                 const oldPopulation = house.population;
                 let newPopulation = oldPopulation + changeAmount;
                 
-                // Aturan khusus: Rumah kosong hanya jika pajak > 40%
+                // Specific rule: House becomes empty only if tax > 40%
                 if (taxRate > 40 && newPopulation < 0) {
                     newPopulation = 0;
                 } else if (newPopulation < 1) {
-                    // Jika pajak <= 40%, populasi tidak boleh 0
+                    // If tax <= 40%, population should not be 0
                     newPopulation = 1;
                 }
 
                 house.population = Math.min(buildingStats.house.population, newPopulation);
                 
                 if (house.population !== oldPopulation) {
-                    console.log(`Rumah di (${Math.floor(house.x/gridSize)}, ${Math.floor(house.y/gridSize)}) berubah populasi dari ${oldPopulation} menjadi ${house.population}`);
+                    console.log(`House at (${Math.floor(house.x/gridSize)}, ${Math.floor(house.y/gridSize)}) population changed from ${oldPopulation} to ${house.population}`);
                 }
             });
         }
 
-        // Set interval untuk mengecek perubahan populasi
+        // Set interval to check for population changes
         setInterval(checkPopulationChange, 5000); 
 
-        // Fungsi untuk memperbarui posisi pemain, peta, dan data game
+        // Function to update player, map, and game data
         function update() {
             if (mode === 'move') {
                 let moveX = 0;
                 let moveY = 0;
-                // Gerak dari keyboard
+                // Keyboard movement
                 if (keys['arrowup'] || keys['w']) moveY -= player.speed;
                 if (keys['arrowdown'] || keys['s']) moveY += player.speed;
                 if (keys['arrowleft'] || keys['a']) moveX -= player.speed;
                 if (keys['arrowright'] || keys['d']) moveX += player.speed;
-                // Gerak dari tombol sentuh
+                // Touch button movement
                 if (touchControls.up) moveY -= player.speed;
                 if (touchControls.down) moveY += player.speed;
                 if (touchControls.left) moveX -= player.speed;
@@ -582,7 +587,7 @@
                 player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
             }
 
-            // Hitung ulang populasi total
+            // Recalculate total population
             population = 0;
             buildings.forEach(b => {
                 if (b.type === 'house') {
@@ -594,10 +599,10 @@
             if (now - lastIncomeTime > incomeInterval) {
                 let totalIncome = 0;
                 
-                // PENDAPATAN DARI PAJAK
+                // INCOME FROM TAXES
                 totalIncome += population * incomePerPersonPerSecond * (taxRate / 100);
 
-                // PENDAPATAN DARI KEUNTUNGAN TOKO DAN INDUSTRI
+                // INCOME FROM STORE AND INDUSTRIAL PROFIT
                 buildings.forEach(b => {
                     if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
                         totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
@@ -610,7 +615,7 @@
             }
         }
 
-        // Fungsi untuk menggambar ulang semua elemen game
+        // Function to redraw all game elements
         function draw() {
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -636,7 +641,7 @@
                 if (buildingFound.type === 'house') {
                     infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
                     infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
-                    // Menambahkan informasi pendapatan per rumah
+                    // Add per-house income info
                     const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                     infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
                 } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
@@ -654,7 +659,7 @@
             }
         }
 
-        // Loop utama game
+        // Main game loop
         function gameLoop() {
             update();
             draw();
@@ -662,7 +667,7 @@
         }
         gameLoop();
 
-        // Tangani klik mouse dan sentuhan untuk mode 'build' dan 'destroy'
+        // Handle mouse and touch clicks for 'build' and 'destroy' modes
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
@@ -733,7 +738,7 @@
             }
         }
 
-        // Tangani tombol UI
+        // Handle UI buttons
         const moveButton = document.getElementById('moveButton');
         const houseButton = document.getElementById('houseButton');
         const parkButton = document.getElementById('parkButton');
@@ -742,7 +747,7 @@
         const roadButton = document.getElementById('roadButton');
         const destroyButton = document.getElementById('destroyButton');
 
-        // Fungsi untuk mengupdate tampilan semua tombol
+        // Function to update the appearance of all buttons
         function updateAllButtons() {
             const allButtons = [
                 { id: moveButton, mode: 'move', type: 'move' },
@@ -784,7 +789,7 @@
             }
         }
 
-        // Event listeners untuk tombol
+        // Event listeners for buttons
         moveButton.addEventListener('click', () => {
             mode = 'move';
             updateAllButtons();
@@ -820,22 +825,22 @@
             updateAllButtons();
         });
 
-        // Menambahkan listener untuk tombol "Mulai Ulang"
+        // Add listener for the "Restart" button
         restartButton.addEventListener('click', restartGame);
         
-        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI SECARA FINAL ---
-        // Menampilkan modal
+        // --- MODAL GUIDE LOGIC FINALIZED ---
+        // Show modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
         });
         
-        // Menangani penutupan modal dari satu tempat (tombol atau klik di luar)
+        // Handle closing the modal from one place (button or outside click)
         function closeGuideModal() {
             guideModal.classList.add('hidden');
         }
 
         guideModal.addEventListener('click', (event) => {
-            // Memeriksa jika target klik adalah modal itu sendiri atau tombol tutup
+            // Check if the clicked target is the modal itself or the close button
             if (event.target === guideModal || event.target === closeModalButton) {
                 closeGuideModal();
             }
