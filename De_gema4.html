@@ -131,7 +131,7 @@
         let buildingType = 'house';
 
         // Sistem mata uang dan populasi
-        let money = 1000;
+        let money = 1000.00; // Mulai dengan float untuk menjaga akurasi
         let population = 0;
         let lastIncomeTime = Date.now();
         const incomeInterval = 1000; // Pendapatan setiap 1 detik
@@ -160,7 +160,7 @@
         };
 
         /**
-         * Mengubah angka menjadi format mata uang Rupiah
+         * Mengubah angka menjadi format mata uang Rupiah dengan desimal
          * @param {number} amount - Jumlah uang
          * @returns {string} - Teks dengan format Rp.
          */
@@ -168,7 +168,8 @@
             return new Intl.NumberFormat('id-ID', {
                 style: 'currency',
                 currency: 'IDR',
-                maximumFractionDigits: 0
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
             }).format(amount);
         }
 
@@ -440,7 +441,7 @@
                 // Pendapatan dari keuntungan toko dan industri
                 buildings.forEach(b => {
                     if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
-                        totalIncome += Math.floor(buildingStats[b.type].cost * (b.needs.profitability / 100));
+                        totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
                     }
                 });
 
