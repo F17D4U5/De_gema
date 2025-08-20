@@ -797,7 +797,7 @@
             updateAllButtons();
         });
         
-        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI ---
+        // --- LOGIKA MODAL PANDUAN YANG TELAH DIUJI ULANG ---
         // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
@@ -807,13 +807,30 @@
         closeModalButton.addEventListener('click', () => {
             guideModal.classList.add('hidden');
         });
+
+        // Menambahkan listener sentuh untuk tombol 'X'
+        closeModalButton.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Mencegah scrolling
+            guideModal.classList.add('hidden');
+        }, { passive: false });
         
         // Menyembunyikan modal dengan klik di luar kotak panduan
         guideModal.addEventListener('click', (event) => {
+            // Memastikan klik tidak berasal dari konten modal itu sendiri
             if (event.target === guideModal) {
                 guideModal.classList.add('hidden');
             }
         });
+
+        // Menambahkan listener sentuh untuk klik di luar kotak panduan
+        guideModal.addEventListener('touchstart', (event) => {
+            event.preventDefault(); // Mencegah scrolling
+            // Memastikan sentuhan tidak berasal dari konten modal
+            if (event.target === guideModal) {
+                guideModal.classList.add('hidden');
+            }
+        }, { passive: false });
+        // --- AKHIR LOGIKA MODAL PANDUAN YANG TELAH DIUJI ULANG ---
 
         updateUI();
         updateAllButtons();
