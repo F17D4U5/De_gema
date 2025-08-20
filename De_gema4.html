@@ -69,8 +69,8 @@
         <div>Populasi: <span id="populationDisplay">0</span></div>
     </div>
 
-    <!-- Kontrol Gerak (Baru untuk HP) -->
-    <div class="w-full max-w-4xl p-2 bg-slate-200 rounded-lg shadow-inner mt-2 hidden sm:flex justify-center mb-4">
+    <!-- Kontrol Gerak (Dibuat agar selalu terlihat di HP) -->
+    <div class="w-full max-w-4xl p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
         <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
             <div></div>
             <button id="upButton" class="control-button text-2xl">▲</button>
