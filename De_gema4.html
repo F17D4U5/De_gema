@@ -70,7 +70,6 @@
             border-radius: 0.75rem;
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
             max-width: 90%;
-            /* Memastikan modal tidak lebih tinggi dari viewport */
             max-height: 90vh;
             overflow-y: auto;
             color: #334155;
@@ -151,8 +150,9 @@
             <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Industri</button>
             <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Jalan</button>
             <button id="destroyButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors">Hancurkan</button>
-            <!-- Tombol Panduan Baru -->
             <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
+            <!-- Tombol "Mulai Ulang" baru -->
+            <button id="restartButton" class="px-4 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
         </div>
     </div>
 
@@ -191,10 +191,11 @@
         const leftButton = document.getElementById('leftButton');
         const rightButton = document.getElementById('rightButton');
 
-        // Mendapatkan elemen modal
+        // Mendapatkan elemen modal dan tombol restart
         const guideButton = document.getElementById('guideButton');
         const guideModal = document.getElementById('guideModal');
         const closeModalButton = document.getElementById('closeModal');
+        const restartButton = document.getElementById('restartButton');
 
         // Menyesuaikan ukuran canvas agar responsif
         function resizeCanvas() {
@@ -207,15 +208,15 @@
         // Variabel-variabel game
         const gridSize = 40;
         let mapOffset = { x: 0, y: 0 };
-        const buildings = [];
+        let buildings = []; // Gunakan let agar bisa diatur ulang
         let mode = 'move'; // 'move', 'build', atau 'destroy'
         let buildingType = 'house';
 
         // Sistem mata uang dan populasi
-        let money = 1000.00; // Mulai dengan float untuk menjaga akurasi
+        let money = 1000.00;
         let population = 0;
         let lastIncomeTime = Date.now();
-        const incomeInterval = 1000; // Pendapatan setiap 1 detik
+        const incomeInterval = 1000;
         let taxRate = parseInt(taxRateSlider.value);
         const incomePerPersonPerSecond = 10;
 
@@ -239,6 +240,25 @@
             speed: 5,
             color: '#ef4444' // Merah
         };
+        
+        // Fungsi untuk mereset semua variabel game ke kondisi awal
+        function restartGame() {
+            // Reset variabel game
+            money = 1000.00;
+            population = 0;
+            buildings = [];
+            mapOffset = { x: 0, y: 0 };
+            player.x = 0;
+            player.y = 0;
+            mode = 'move';
+            buildingType = 'house';
+            taxRateSlider.value = 5;
+            taxRate = 5;
+            
+            // Perbarui UI
+            updateUI();
+            updateAllButtons();
+        }
 
         /**
          * Mengubah angka menjadi format mata uang Rupiah dengan desimal
@@ -642,7 +662,6 @@
         // Tangani klik mouse dan sentuhan untuk mode 'build' dan 'destroy'
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('touchstart', (e) => {
-            // TIDAK ADA LAGI e.preventDefault()
             const touch = e.touches[0];
             const mouseEvent = new MouseEvent("click", {
                 clientX: touch.clientX,
@@ -797,6 +816,9 @@
             mode = 'destroy';
             updateAllButtons();
         });
+
+        // Menambahkan listener untuk tombol "Mulai Ulang"
+        restartButton.addEventListener('click', restartGame);
         
         // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI SECARA FINAL ---
         // Menampilkan modal
@@ -816,10 +838,6 @@
             }
         });
         
-        // Catatan: Listener touchstart yang sebelumnya ada telah dihapus dari modal dan canvas
-        // karena mengganggu pengguliran konten di dalam modal pada perangkat seluler.
-        // Sekarang, perilaku sentuh bawaan browser akan menangani pengguliran dengan benar.
-
         updateUI();
         updateAllButtons();
     </script>
