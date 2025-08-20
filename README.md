@@ -61,6 +61,9 @@
             align-items: center;
             z-index: 2000;
         }
+        .modal.hidden {
+            display: none;
+        }
         .modal-content {
             background-color: white;
             padding: 2rem;
@@ -179,7 +182,7 @@
         const moneyDisplay = document.getElementById('moneyDisplay');
         const populationDisplay = document.getElementById('populationDisplay');
         const taxRateSlider = document.getElementById('taxRateSlider');
-        const taxRateDisplay = document.getElementById('taxRateDisplay');
+        const taxRateDisplay = document = document.getElementById('taxRateDisplay');
 
         // Mendapatkan tombol kontrol gerak baru
         const upButton = document.getElementById('upButton');
@@ -793,22 +796,36 @@
             mode = 'destroy';
             updateAllButtons();
         });
-
-        // Event listener untuk tombol panduan dan modal
+        
+        // --- LOGIKA MODAL PANDUAN BARU ---
+        // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
         });
-
+        
+        // Menyembunyikan modal dengan tombol 'X'
         closeModalButton.addEventListener('click', () => {
             guideModal.classList.add('hidden');
         });
+        // Menambahkan listener sentuh untuk menutup modal
+        closeModalButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            guideModal.classList.add('hidden');
+        }, { passive: false });
 
-        // Menutup modal jika user klik di luar kotak
-        window.addEventListener('click', (event) => {
+        // Menyembunyikan modal dengan klik atau sentuhan di luar kotak panduan
+        guideModal.addEventListener('click', (event) => {
             if (event.target === guideModal) {
                 guideModal.classList.add('hidden');
             }
         });
+        // Menambahkan listener sentuh untuk menutup modal dengan sentuhan di luar
+        guideModal.addEventListener('touchstart', (event) => {
+            if (event.target === guideModal) {
+                guideModal.classList.add('hidden');
+            }
+        }, { passive: false });
+        // --- AKHIR LOGIKA MODAL PANDUAN BARU ---
 
         updateUI();
         updateAllButtons();
