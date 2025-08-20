@@ -389,6 +389,61 @@
             }
         }
         setupTouchControls();
+        
+        // --- LOGIKA POPULASI YANG SANGAT JELAS BERDASARKAN ATURAN PENGGUNA ---
+        function checkPopulationChange() {
+            const houseBuildings = buildings.filter(b => b.type === 'house');
+            
+            houseBuildings.forEach(house => {
+                let changeAmount = 0;
+                let logMessage = '';
+
+                // Logika berdasarkan Zona Pajak
+                if (taxRate <= 20) {
+                    // Zona 0-20%: Populasi pasti bertambah
+                    changeAmount = Math.floor(Math.random() * 2) + 1; // Bertambah 1 atau 2
+                    logMessage = `populasi bertambah karena pajak rendah`;
+                } else if (taxRate <= 45) {
+                    // Zona 21-45%: Zona Abu-abu
+                    const increaseChance = (45 - taxRate) / 25; // Peluang menurun dari 100% (pajak 20) ke 0% (pajak 45)
+                    const decreaseChance = (taxRate - 20) / 25; // Peluang meningkat dari 0% (pajak 20) ke 100% (pajak 45)
+                    
+                    if (Math.random() < increaseChance) {
+                        changeAmount += Math.floor(Math.random() * 2) + 1;
+                        logMessage = `mendapatkan ${changeAmount} penghuni baru`;
+                    }
+                    
+                    if (Math.random() < decreaseChance) {
+                        changeAmount -= Math.floor(Math.random() * 2) + 1;
+                        logMessage = `kehilangan ${Math.abs(changeAmount)} penghuni`;
+                    }
+                } else {
+                    // Zona 46-50%: Populasi pasti berkurang
+                    changeAmount = -(Math.floor(Math.random() * 2) + 1); // Berkurang 1 atau 2
+                    logMessage = `populasi berkurang karena pajak sangat tinggi`;
+                }
+                
+                const oldPopulation = house.population;
+                let newPopulation = oldPopulation + changeAmount;
+                
+                // Aturan khusus: Rumah kosong hanya jika pajak > 40%
+                if (taxRate > 40 && newPopulation < 0) {
+                    newPopulation = 0;
+                } else if (newPopulation < 1) {
+                    // Jika pajak <= 40%, populasi tidak boleh 0
+                    newPopulation = 1;
+                }
+
+                house.population = Math.min(buildingStats.house.population, newPopulation);
+                
+                if (house.population !== oldPopulation) {
+                    console.log(`Rumah di (${Math.floor(house.x/gridSize)}, ${Math.floor(house.y/gridSize)}) berubah populasi dari ${oldPopulation} menjadi ${house.population}`);
+                }
+            });
+        }
+
+        // Set interval untuk mengecek perubahan populasi
+        setInterval(checkPopulationChange, 5000); 
 
         // Fungsi untuk memperbarui posisi pemain, peta, dan data game
         function update() {
@@ -423,6 +478,7 @@
                 player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
             }
 
+            // Hitung ulang populasi total
             population = 0;
             buildings.forEach(b => {
                 if (b.type === 'house') {
@@ -434,11 +490,10 @@
             if (now - lastIncomeTime > incomeInterval) {
                 let totalIncome = 0;
                 
-                // PERBAIKAN LOGIKA PENDAPATAN
-                // Pendapatan dari pajak: total populasi * pendapatan per orang per detik * persentase pajak
+                // PENDAPATAN DARI PAJAK
                 totalIncome += population * incomePerPersonPerSecond * (taxRate / 100);
 
-                // Pendapatan dari keuntungan toko dan industri
+                // PENDAPATAN DARI KEUNTUNGAN TOKO DAN INDUSTRI
                 buildings.forEach(b => {
                     if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
                         totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
