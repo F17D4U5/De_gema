@@ -136,10 +136,11 @@
         let lastIncomeTime = Date.now();
         const incomeInterval = 3000; // Pendapatan setiap 3 detik
         let taxRate = parseInt(taxRateSlider.value);
+        const incomePerPersonPerSecond = 10; // Perubahan di sini!
 
         // Biaya dan Pendapatan Bangunan
         const buildingStats = {
-            house: { cost: 100, population: 5, incomeRate: 2, name: 'Rumah', color: '#fde047' },
+            house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
             park: { cost: 50, name: 'Taman', color: '#22c55e' },
             store: { cost: 200, income: 0, workers: 10, name: 'Toko', color: '#f59e0b' },
             industrial: { cost: 300, income: 0, workers: 20, name: 'Industri', color: '#1f2937' },
@@ -432,8 +433,12 @@
             if (now - lastIncomeTime > incomeInterval) {
                 let totalIncome = 0;
                 
-                // Pendapatan dari pajak: setiap orang menghasilkan 100, lalu dikenakan pajak
-                totalIncome += (population * 100) * (taxRate / 100);
+                // PERBAIKAN LOGIKA PENDAPATAN
+                // Pendapatan dari pajak: setiap orang menghasilkan 10 per detik
+                // Interval 3 detik, jadi per orang menghasilkan 10 * 3 = 30 per interval
+                // Pajak yang diambil: 30 * (taxRate / 100)
+                // Total pendapatan dari pajak: total populasi * pendapatan per orang * pajak
+                totalIncome += (population * incomePerPersonPerSecond * (incomeInterval / 1000)) * (taxRate / 100);
 
                 // Pendapatan dari keuntungan toko dan industri
                 buildings.forEach(b => {
@@ -474,6 +479,9 @@
                 if (buildingFound.type === 'house') {
                     infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
                     infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
+                    // Menambahkan informasi pendapatan per rumah
+                    const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond * (incomeInterval/1000)) * (taxRate / 100);
+                    infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}</p>`;
                 } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
                     infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 }
