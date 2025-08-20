@@ -70,7 +70,8 @@
             border-radius: 0.75rem;
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
             max-width: 90%;
-            max-height: 90%;
+            /* Memastikan modal tidak lebih tinggi dari viewport */
+            max-height: 90vh;
             overflow-y: auto;
             color: #334155;
         }
@@ -815,12 +816,13 @@
             }
         });
 
+        // Hati-hati: Menghapus event.preventDefault() untuk memungkinkan scrolling bawaan
         guideModal.addEventListener('touchstart', (event) => {
-            event.preventDefault(); // Mencegah perilaku default seperti scrolling
             // Memeriksa jika target sentuhan adalah modal itu sendiri atau tombol tutup
             if (event.target === guideModal || event.target === closeModalButton) {
                 closeGuideModal();
             }
+            // Event.preventDefault() tidak lagi digunakan di sini, memungkinkan scrolling di dalam modal-content.
         }, { passive: false });
 
         updateUI();
