@@ -223,9 +223,9 @@
         let taxRate = parseInt(taxRateSlider.value);
         const incomePerPersonPerSecond = 10;
         
-        // --- NEW INFLUENCE RADIUS VARIABLE ---
+        // --- UPDATED INFLUENCE RADIUS VARIABLE ---
         const influenceRadiusInBlocks = 10; // The new influence radius in blocks
-        // The previous value was 3. You can change this to 10 or any other number.
+        // You can change this to 10 or any other number.
 
         // Building costs and stats
         const buildingStats = {
@@ -240,8 +240,8 @@
 
         // Player object
         const player = {
-            x: 100,
-            y: 1000,
+            x: 0,
+            y: 0,
             width: gridSize * 0.7,
             height: gridSize * 0.7,
             speed: 5,
@@ -365,7 +365,6 @@
                 const tileY = Math.floor(building.y / gridSize);
                 const isConnected = isConnectedToRoad(tileX, tileY);
                 
-                // --- MODIFIED INFLUENCE RADIUS CHECK ---
                 const nearbyBuildings = buildings.filter(b => {
                     const distanceX = Math.abs(building.x - b.x);
                     const distanceY = Math.abs(building.y - b.y);
