@@ -182,7 +182,7 @@
         const moneyDisplay = document.getElementById('moneyDisplay');
         const populationDisplay = document.getElementById('populationDisplay');
         const taxRateSlider = document.getElementById('taxRateSlider');
-        const taxRateDisplay = document = document.getElementById('taxRateDisplay');
+        const taxRateDisplay = document.getElementById('taxRateDisplay');
 
         // Mendapatkan tombol kontrol gerak baru
         const upButton = document.getElementById('upButton');
@@ -797,7 +797,7 @@
             updateAllButtons();
         });
         
-        // --- LOGIKA MODAL PANDUAN BARU ---
+        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI ---
         // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
@@ -807,25 +807,13 @@
         closeModalButton.addEventListener('click', () => {
             guideModal.classList.add('hidden');
         });
-        // Menambahkan listener sentuh untuk menutup modal
-        closeModalButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            guideModal.classList.add('hidden');
-        }, { passive: false });
-
-        // Menyembunyikan modal dengan klik atau sentuhan di luar kotak panduan
+        
+        // Menyembunyikan modal dengan klik di luar kotak panduan
         guideModal.addEventListener('click', (event) => {
             if (event.target === guideModal) {
                 guideModal.classList.add('hidden');
             }
         });
-        // Menambahkan listener sentuh untuk menutup modal dengan sentuhan di luar
-        guideModal.addEventListener('touchstart', (event) => {
-            if (event.target === guideModal) {
-                guideModal.classList.add('hidden');
-            }
-        }, { passive: false });
-        // --- AKHIR LOGIKA MODAL PANDUAN BARU ---
 
         updateUI();
         updateAllButtons();
@@ -1016,7 +1004,7 @@
         const moneyDisplay = document.getElementById('moneyDisplay');
         const populationDisplay = document.getElementById('populationDisplay');
         const taxRateSlider = document.getElementById('taxRateSlider');
-        const taxRateDisplay = document = document.getElementById('taxRateDisplay');
+        const taxRateDisplay = document.getElementById('taxRateDisplay');
 
         // Mendapatkan tombol kontrol gerak baru
         const upButton = document.getElementById('upButton');
@@ -1631,7 +1619,7 @@
             updateAllButtons();
         });
         
-        // --- LOGIKA MODAL PANDUAN BARU ---
+        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI ---
         // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
@@ -1641,25 +1629,13 @@
         closeModalButton.addEventListener('click', () => {
             guideModal.classList.add('hidden');
         });
-        // Menambahkan listener sentuh untuk menutup modal
-        closeModalButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            guideModal.classList.add('hidden');
-        }, { passive: false });
-
-        // Menyembunyikan modal dengan klik atau sentuhan di luar kotak panduan
+        
+        // Menyembunyikan modal dengan klik di luar kotak panduan
         guideModal.addEventListener('click', (event) => {
             if (event.target === guideModal) {
                 guideModal.classList.add('hidden');
             }
         });
-        // Menambahkan listener sentuh untuk menutup modal dengan sentuhan di luar
-        guideModal.addEventListener('touchstart', (event) => {
-            if (event.target === guideModal) {
-                guideModal.classList.add('hidden');
-            }
-        }, { passive: false });
-        // --- AKHIR LOGIKA MODAL PANDUAN BARU ---
 
         updateUI();
         updateAllButtons();
@@ -1850,7 +1826,7 @@
         const moneyDisplay = document.getElementById('moneyDisplay');
         const populationDisplay = document.getElementById('populationDisplay');
         const taxRateSlider = document.getElementById('taxRateSlider');
-        const taxRateDisplay = document = document.getElementById('taxRateDisplay');
+        const taxRateDisplay = document.getElementById('taxRateDisplay');
 
         // Mendapatkan tombol kontrol gerak baru
         const upButton = document.getElementById('upButton');
@@ -2465,7 +2441,7 @@
             updateAllButtons();
         });
         
-        // --- LOGIKA MODAL PANDUAN BARU ---
+        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI ---
         // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
@@ -2475,25 +2451,13 @@
         closeModalButton.addEventListener('click', () => {
             guideModal.classList.add('hidden');
         });
-        // Menambahkan listener sentuh untuk menutup modal
-        closeModalButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            guideModal.classList.add('hidden');
-        }, { passive: false });
-
-        // Menyembunyikan modal dengan klik atau sentuhan di luar kotak panduan
+        
+        // Menyembunyikan modal dengan klik di luar kotak panduan
         guideModal.addEventListener('click', (event) => {
             if (event.target === guideModal) {
                 guideModal.classList.add('hidden');
             }
         });
-        // Menambahkan listener sentuh untuk menutup modal dengan sentuhan di luar
-        guideModal.addEventListener('touchstart', (event) => {
-            if (event.target === guideModal) {
-                guideModal.classList.add('hidden');
-            }
-        }, { passive: false });
-        // --- AKHIR LOGIKA MODAL PANDUAN BARU ---
 
         updateUI();
         updateAllButtons();
