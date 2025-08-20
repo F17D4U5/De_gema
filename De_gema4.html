@@ -134,9 +134,9 @@
         let money = 1000;
         let population = 0;
         let lastIncomeTime = Date.now();
-        const incomeInterval = 3000; // Pendapatan setiap 3 detik
+        const incomeInterval = 1000; // Perubahan di sini! Pendapatan setiap 1 detik
         let taxRate = parseInt(taxRateSlider.value);
-        const incomePerPersonPerSecond = 10; // Perubahan di sini!
+        const incomePerPersonPerSecond = 10;
 
         // Biaya dan Pendapatan Bangunan
         const buildingStats = {
@@ -434,11 +434,8 @@
                 let totalIncome = 0;
                 
                 // PERBAIKAN LOGIKA PENDAPATAN
-                // Pendapatan dari pajak: setiap orang menghasilkan 10 per detik
-                // Interval 3 detik, jadi per orang menghasilkan 10 * 3 = 30 per interval
-                // Pajak yang diambil: 30 * (taxRate / 100)
-                // Total pendapatan dari pajak: total populasi * pendapatan per orang * pajak
-                totalIncome += (population * incomePerPersonPerSecond * (incomeInterval / 1000)) * (taxRate / 100);
+                // Pendapatan dari pajak: total populasi * pendapatan per orang per detik * persentase pajak
+                totalIncome += population * incomePerPersonPerSecond * (taxRate / 100);
 
                 // Pendapatan dari keuntungan toko dan industri
                 buildings.forEach(b => {
@@ -480,8 +477,8 @@
                     infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
                     infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
                     // Menambahkan informasi pendapatan per rumah
-                    const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond * (incomeInterval/1000)) * (taxRate / 100);
-                    infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}</p>`;
+                    const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
+                    infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
                 } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
                     infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 }
