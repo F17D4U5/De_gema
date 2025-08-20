@@ -89,7 +89,8 @@
         <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500">
     </div>
 
-    <div class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-7 gap-2">
+    <!-- Container tombol yang diperbaiki dengan flexbox -->
+    <div class="mt-4 flex flex-wrap gap-2 justify-center">
         <button id="moveButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Mode Pindah</button>
         <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Rumah</button>
         <button id="parkButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Taman</button>
