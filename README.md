@@ -642,7 +642,7 @@
         // Tangani klik mouse dan sentuhan untuk mode 'build' dan 'destroy'
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Mencegah scrolling default
+            // TIDAK ADA LAGI e.preventDefault()
             const touch = e.touches[0];
             const mouseEvent = new MouseEvent("click", {
                 clientX: touch.clientX,
@@ -816,7 +816,8 @@
             }
         });
         
-        // Catatan: Listener touchstart yang sebelumnya ada telah dihapus karena mengganggu pengguliran konten di dalam modal pada perangkat seluler.
+        // Catatan: Listener touchstart yang sebelumnya ada telah dihapus dari modal dan canvas
+        // karena mengganggu pengguliran konten di dalam modal pada perangkat seluler.
         // Sekarang, perilaku sentuh bawaan browser akan menangani pengguliran dengan benar.
 
         updateUI();
