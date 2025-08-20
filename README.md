@@ -174,7 +174,8 @@
                 <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
                 <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko dan Industri akan memberikan keuntungan.</li>
                 <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
-		<li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
+                <!-- NEW LIST ITEM FOR RESTART BUTTON -->
+                <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
             </ul>
         </div>
     </div>
@@ -225,7 +226,7 @@
         const incomePerPersonPerSecond = 10;
         
         // --- UPDATED INFLUENCE RADIUS VARIABLE ---
-        const influenceRadiusInBlocks = 10; // The new influence radius in blocks
+        const influenceRadiusInBlocks = 7; // The new influence radius in blocks
         // You can change this to 10 or any other number.
 
         // Building costs and stats
