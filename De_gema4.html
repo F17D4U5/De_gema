@@ -14,8 +14,7 @@
             align-items: center;
             min-height: 100vh;
             color: #334155;
-            flex-direction: column;
-            gap: 1rem;
+            padding: 1rem;
         }
         canvas {
             background-color: #e2e8f0;
@@ -53,51 +52,54 @@
     </style>
 </head>
 <body class="bg-gray-100 p-4 flex flex-col items-center justify-center">
-
-    <div class="text-center mb-4">
-        <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
-        <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
-    </div>
-
-    <div class="relative w-full max-w-4xl flex justify-center">
-        <canvas id="gameCanvas" width="800" height="600" class="w-full h-auto max-w-full"></canvas>
-        <div id="infoBox" class="info-box hidden opacity-0"></div>
-    </div>
-
-    <div id="statusPanel" class="w-full max-w-4xl text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
-        <div>Uang: <span id="moneyDisplay">1000</span></div>
-        <div>Populasi: <span id="populationDisplay">0</span></div>
-    </div>
-
-    <!-- Kontrol Gerak (Dibuat agar selalu terlihat di HP, tapi disembunyikan di desktop) -->
-    <div class="md:hidden w-full max-w-4xl p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
-        <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
-            <div></div>
-            <button id="upButton" class="control-button text-2xl">▲</button>
-            <div></div>
-            <button id="leftButton" class="control-button text-2xl">◀</button>
-            <div></div>
-            <button id="rightButton" class="control-button text-2xl">►</button>
-            <div></div>
-            <button id="downButton" class="control-button text-2xl">▼</button>
-            <div></div>
+    
+    <!-- Kontainer utama yang memusatkan semua konten -->
+    <div class="flex flex-col items-center w-full max-w-4xl">
+        <div class="text-center mb-4">
+            <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
+            <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
         </div>
-    </div>
 
-    <div class="w-full max-w-4xl p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
-        <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay">5</span>%</label>
-        <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500">
-    </div>
+        <div class="relative w-full flex justify-center">
+            <canvas id="gameCanvas" width="800" height="600" class="w-full h-auto max-w-full"></canvas>
+            <div id="infoBox" class="info-box hidden opacity-0"></div>
+        </div>
 
-    <!-- Container tombol yang diperbaiki dengan flexbox -->
-    <div class="mt-4 flex flex-wrap gap-2 justify-center">
-        <button id="moveButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Mode Pindah</button>
-        <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Rumah</button>
-        <button id="parkButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Taman</button>
-        <button id="storeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Toko</button>
-        <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Industri</button>
-        <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Jalan</button>
-        <button id="destroyButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors">Hancurkan</button>
+        <div id="statusPanel" class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
+            <div>Uang: <span id="moneyDisplay">1000</span></div>
+            <div>Populasi: <span id="populationDisplay">0</span></div>
+        </div>
+
+        <!-- Kontrol Gerak (Dibuat agar selalu terlihat di HP, tapi disembunyikan di desktop) -->
+        <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
+            <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
+                <div></div>
+                <button id="upButton" class="control-button text-2xl">▲</button>
+                <div></div>
+                <button id="leftButton" class="control-button text-2xl">◀</button>
+                <div></div>
+                <button id="rightButton" class="control-button text-2xl">►</button>
+                <div></div>
+                <button id="downButton" class="control-button text-2xl">▼</button>
+                <div></div>
+            </div>
+        </div>
+
+        <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
+            <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay">5</span>%</label>
+            <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500">
+        </div>
+
+        <!-- Container tombol yang diperbaiki dengan flexbox -->
+        <div class="mt-4 flex flex-wrap gap-2 justify-center">
+            <button id="moveButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Mode Pindah</button>
+            <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Rumah</button>
+            <button id="parkButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Taman</button>
+            <button id="storeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Toko</button>
+            <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Industri</button>
+            <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Jalan</button>
+            <button id="destroyButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors">Hancurkan</button>
+        </div>
     </div>
 
     <script>
