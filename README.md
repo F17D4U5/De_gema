@@ -797,40 +797,31 @@
             updateAllButtons();
         });
         
-        // --- LOGIKA MODAL PANDUAN YANG TELAH DIUJI ULANG ---
+        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI SECARA FUNDAMENTAL ---
         // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
         });
         
-        // Menyembunyikan modal dengan tombol 'X'
-        closeModalButton.addEventListener('click', () => {
+        // Menangani penutupan modal dari satu tempat (tombol atau klik di luar)
+        function closeGuideModal() {
             guideModal.classList.add('hidden');
-        });
+        }
 
-        // Menambahkan listener sentuh untuk tombol 'X'
-        closeModalButton.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // Mencegah scrolling
-            guideModal.classList.add('hidden');
-        }, { passive: false });
-        
-        // Menyembunyikan modal dengan klik di luar kotak panduan
         guideModal.addEventListener('click', (event) => {
-            // Memastikan klik tidak berasal dari konten modal itu sendiri
-            if (event.target === guideModal) {
-                guideModal.classList.add('hidden');
+            // Memeriksa jika target klik adalah modal itu sendiri atau tombol tutup
+            if (event.target === guideModal || event.target === closeModalButton) {
+                closeGuideModal();
             }
         });
 
-        // Menambahkan listener sentuh untuk klik di luar kotak panduan
         guideModal.addEventListener('touchstart', (event) => {
-            event.preventDefault(); // Mencegah scrolling
-            // Memastikan sentuhan tidak berasal dari konten modal
-            if (event.target === guideModal) {
-                guideModal.classList.add('hidden');
+            event.preventDefault(); // Mencegah perilaku default seperti scrolling
+            // Memeriksa jika target sentuhan adalah modal itu sendiri atau tombol tutup
+            if (event.target === guideModal || event.target === closeModalButton) {
+                closeGuideModal();
             }
         }, { passive: false });
-        // --- AKHIR LOGIKA MODAL PANDUAN YANG TELAH DIUJI ULANG ---
 
         updateUI();
         updateAllButtons();
