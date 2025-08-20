@@ -49,6 +49,54 @@
         .control-button:active {
             background-color: rgb(59, 130, 246);
         }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            color: #334155;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #94a3b8;
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: #475569;
+        }
+        .guide-list li {
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 p-4 flex flex-col items-center justify-center">
@@ -99,6 +147,27 @@
             <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Industri</button>
             <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Jalan</button>
             <button id="destroyButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors">Hancurkan</button>
+            <!-- Tombol Panduan Baru -->
+            <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
+        </div>
+    </div>
+
+    <!-- Modal Panduan -->
+    <div id="guideModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Panduan Permainan</h2>
+                <button id="closeModal" class="modal-close">&times;</button>
+            </div>
+            <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
+            <ul class="guide-list mt-4">
+                <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta.</li>
+                <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
+                <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
+                <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
+                <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko dan Industri akan memberikan keuntungan.</li>
+                <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
+            </ul>
         </div>
     </div>
 
@@ -117,6 +186,11 @@
         const downButton = document.getElementById('downButton');
         const leftButton = document.getElementById('leftButton');
         const rightButton = document.getElementById('rightButton');
+
+        // Mendapatkan elemen modal
+        const guideButton = document.getElementById('guideButton');
+        const guideModal = document.getElementById('guideModal');
+        const closeModalButton = document.getElementById('closeModal');
 
         // Menyesuaikan ukuran canvas agar responsif
         function resizeCanvas() {
@@ -718,6 +792,22 @@
         destroyButton.addEventListener('click', () => {
             mode = 'destroy';
             updateAllButtons();
+        });
+
+        // Event listener untuk tombol panduan dan modal
+        guideButton.addEventListener('click', () => {
+            guideModal.classList.remove('hidden');
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            guideModal.classList.add('hidden');
+        });
+
+        // Menutup modal jika user klik di luar kotak
+        window.addEventListener('click', (event) => {
+            if (event.target === guideModal) {
+                guideModal.classList.add('hidden');
+            }
         });
 
         updateUI();
