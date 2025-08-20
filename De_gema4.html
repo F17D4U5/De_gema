@@ -158,9 +158,22 @@
             color: '#ef4444' // Merah
         };
 
+        /**
+         * Mengubah angka menjadi format mata uang Rupiah
+         * @param {number} amount - Jumlah uang
+         * @returns {string} - Teks dengan format Rp.
+         */
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
         // Fungsi untuk memperbarui tampilan uang dan populasi
         function updateUI() {
-            moneyDisplay.textContent = money;
+            moneyDisplay.textContent = formatRupiah(money);
             populationDisplay.textContent = population;
             taxRateDisplay.textContent = taxRate;
         }
@@ -419,8 +432,8 @@
             if (now - lastIncomeTime > incomeInterval) {
                 let totalIncome = 0;
                 
-                // Pendapatan dari pajak
-                totalIncome += population * (taxRate / 100);
+                // Pendapatan dari pajak: setiap orang menghasilkan 100, lalu dikenakan pajak
+                totalIncome += (population * 100) * (taxRate / 100);
 
                 // Pendapatan dari keuntungan toko dan industri
                 buildings.forEach(b => {
@@ -537,7 +550,7 @@
                     infoBox.classList.add('opacity-100');
                     setTimeout(() => infoBox.classList.remove('opacity-100'), 1000);
                 } else if (money < cost) {
-                    infoBox.innerHTML = `<p class="text-red-500">Uang tidak cukup! Biaya: ${cost}</p>`;
+                    infoBox.innerHTML = `<p class="text-red-500">Uang tidak cukup! Biaya: ${formatRupiah(cost)}</p>`;
                     infoBox.classList.remove('hidden');
                     infoBox.classList.add('opacity-100');
                     setTimeout(() => infoBox.classList.remove('opacity-100'), 1000);
