@@ -69,8 +69,8 @@
         <div>Populasi: <span id="populationDisplay">0</span></div>
     </div>
 
-    <!-- Kontrol Gerak (Dibuat agar selalu terlihat di HP) -->
-    <div class="w-full max-w-4xl p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
+    <!-- Kontrol Gerak (Dibuat agar selalu terlihat di HP, tapi disembunyikan di desktop) -->
+    <div class="md:hidden w-full max-w-4xl p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
         <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
             <div></div>
             <button id="upButton" class="control-button text-2xl">▲</button>
@@ -134,7 +134,7 @@
         let money = 1000;
         let population = 0;
         let lastIncomeTime = Date.now();
-        const incomeInterval = 1000; // Perubahan di sini! Pendapatan setiap 1 detik
+        const incomeInterval = 1000; // Pendapatan setiap 1 detik
         let taxRate = parseInt(taxRateSlider.value);
         const incomePerPersonPerSecond = 10;
 
@@ -334,7 +334,7 @@
 
         // Fungsi untuk menangani input keyboard
         document.addEventListener('keydown', (e) => {
-            keys[e.key] = true;
+            keys[e.key.toLowerCase()] = true;
             const key = e.key.toLowerCase();
             if (key === 'm') {
                 mode = 'move';
@@ -359,7 +359,7 @@
             updateAllButtons();
         });
         document.addEventListener('keyup', (e) => {
-            keys[e.key] = false;
+            keys[e.key.toLowerCase()] = false;
         });
 
         // Event listener untuk penggeser pajak
@@ -380,7 +380,7 @@
                 button.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     touchControls[direction] = true;
-                });
+                }, { passive: false });
                 button.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     touchControls[direction] = false;
@@ -395,10 +395,10 @@
                 let moveX = 0;
                 let moveY = 0;
                 // Gerak dari keyboard
-                if (keys['ArrowUp'] || keys['w']) moveY -= player.speed;
-                if (keys['ArrowDown'] || keys['s']) moveY += player.speed;
-                if (keys['ArrowLeft'] || keys['a']) moveX -= player.speed;
-                if (keys['ArrowRight'] || keys['d']) moveX += player.speed;
+                if (keys['arrowup'] || keys['w']) moveY -= player.speed;
+                if (keys['arrowdown'] || keys['s']) moveY += player.speed;
+                if (keys['arrowleft'] || keys['a']) moveX -= player.speed;
+                if (keys['arrowright'] || keys['d']) moveX += player.speed;
                 // Gerak dari tombol sentuh
                 if (touchControls.up) moveY -= player.speed;
                 if (touchControls.down) moveY += player.speed;
