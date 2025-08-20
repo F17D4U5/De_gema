@@ -798,7 +798,7 @@
             updateAllButtons();
         });
         
-        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI SECARA FUNDAMENTAL ---
+        // --- LOGIKA MODAL PANDUAN YANG DIPERBAIKI SECARA FINAL ---
         // Menampilkan modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
@@ -815,15 +815,9 @@
                 closeGuideModal();
             }
         });
-
-        // Hati-hati: Menghapus event.preventDefault() untuk memungkinkan scrolling bawaan
-        guideModal.addEventListener('touchstart', (event) => {
-            // Memeriksa jika target sentuhan adalah modal itu sendiri atau tombol tutup
-            if (event.target === guideModal || event.target === closeModalButton) {
-                closeGuideModal();
-            }
-            // Event.preventDefault() tidak lagi digunakan di sini, memungkinkan scrolling di dalam modal-content.
-        }, { passive: false });
+        
+        // Catatan: Listener touchstart yang sebelumnya ada telah dihapus karena mengganggu pengguliran konten di dalam modal pada perangkat seluler.
+        // Sekarang, perilaku sentuh bawaan browser akan menangani pengguliran dengan benar.
 
         updateUI();
         updateAllButtons();
