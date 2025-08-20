@@ -141,7 +141,7 @@
             <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500">
         </div>
 
-        <!-- Container tombol yang diperbaiki dengan flexbox -->
+        <!-- Container tombol bangunan -->
         <div class="mt-4 flex flex-wrap gap-2 justify-center">
             <button id="moveButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Mode Pindah</button>
             <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Rumah</button>
@@ -151,8 +151,11 @@
             <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Jalan</button>
             <button id="destroyButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors">Hancurkan</button>
             <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
-            <!-- Tombol "Mulai Ulang" baru -->
-            <button id="restartButton" class="px-4 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
+        </div>
+
+        <!-- Container tombol "Mulai Ulang" yang baru dan terpisah -->
+        <div class="mt-4 flex justify-center">
+            <button id="restartButton" class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
         </div>
     </div>
 
