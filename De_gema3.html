@@ -119,9 +119,11 @@
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
     </div>
 
+    <!-- Menambahkan tampilan pengeluaran -->
     <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
         <div>Uang: <span id="moneyDisplay"></span></div>
         <div>Populasi: <span id="populationDisplay"></span></div>
+        <div>Pengeluaran: <span id="expenditureDisplay"></span></div>
     </div>
     
     <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
@@ -203,11 +205,12 @@
     // Building data
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
-        park: { cost: 50, name: 'Taman', color: '#22c55e' },
-        // Meningkatkan baseIncome untuk membuat pendapatan lebih jelas.
-        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 50 },
-        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 75 },
-        road: { cost: 20, name: 'Jalan', color: '#64748b' }
+        // Menambahkan biaya perawatan (maintenance) untuk taman dan jalan
+        // Juga meningkatkan pendapatan dasar untuk toko dan industri
+        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
+        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 100 },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 150 },
+        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 5 }
     };
     
     // DOM elements
@@ -215,6 +218,7 @@
     const ctx = canvas.getContext('2d');
     const moneyDisplay = document.getElementById('moneyDisplay');
     const populationDisplay = document.getElementById('populationDisplay');
+    const expenditureDisplay = document.getElementById('expenditureDisplay');
     const taxRateDisplay = document.getElementById('taxRateDisplay');
     const taxRateSlider = document.getElementById('taxRateSlider');
     const infoBoxEl = document.getElementById('infoBox');
@@ -324,9 +328,11 @@
             player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        // Pembaruan uang (Logika pendapatan baru)
+        // Pembaruan uang (Logika pendapatan dan pengeluaran)
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
+            let totalExpenditure = 0; // Menginisialisasi variabel pengeluaran
+            
             buildings.forEach(b => {
                 if (b.type === 'house') {
                     // Pendapatan dari pajak populasi
@@ -335,9 +341,16 @@
                     // INI ADALAH LOGIKA YANG DIMINTA PENGGUNA: (Pendapatan Dasar) x (Profitabilitas) x (Pajak)
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
+                
+                // Menambahkan pengeluaran untuk perawatan jalan dan taman
+                if (b.maintenance) {
+                    totalExpenditure += b.maintenance;
+                }
             });
             money += totalIncome;
+            money -= totalExpenditure; // Mengurangi pengeluaran dari uang
             lastIncomeTime = Date.now();
+            expenditureDisplay.textContent = formatRupiah(totalExpenditure);
         }
 
         // Pembaruan tampilan
@@ -505,7 +518,8 @@
                 if (!existingBuilding && money >= cost) {
                     const newBuilding = {
                         id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
-                        population: stats.population || 0, needs: { happiness: 0, profitability: 0 }
+                        population: stats.population || 0, needs: { happiness: 0, profitability: 0 },
+                        maintenance: stats.maintenance || 0 // Menambahkan biaya perawatan ke objek bangunan
                     };
                     buildings.push(newBuilding);
                     money -= cost;
