@@ -284,9 +284,10 @@
         });
     }
 
-    // Main Game Loop
-    function update() {
-        // Player movement
+    // Main Game Loop - Pembaruan logika dan gambar dalam satu loop
+    function gameLoop() {
+        // --- Pembaruan Logika Game (update)
+        // Pergerakan pemain
         if (mode === 'move') {
             let moveX = 0, moveY = 0;
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
@@ -310,7 +311,7 @@
             player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        // Update money
+        // Pembaruan uang
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = population * incomePerPersonPerSecond * (taxRate / 100);
             buildings.forEach(b => {
@@ -322,17 +323,16 @@
             lastIncomeTime = Date.now();
         }
 
-        // Update display
+        // Pembaruan tampilan
         moneyDisplay.textContent = formatRupiah(money);
         populationDisplay.textContent = population;
-    }
 
-    function draw() {
-        // Clear canvas
+        // --- Gambar ke Kanvas (draw)
+        // Bersihkan kanvas
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw grid
+        // Gambar grid
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
@@ -352,7 +352,7 @@
             ctx.stroke();
         }
 
-        // Draw buildings
+        // Gambar bangunan
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
@@ -365,13 +365,13 @@
             }
         });
 
-        // Draw player
+        // Gambar pemain
         const playerScreenX = player.x - mapOffset.x;
         const playerScreenY = player.y - mapOffset.y;
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
 
-        // Update info box
+        // Perbarui kotak info
         const playerTileX = Math.floor(player.x / gridSize);
         const playerTileY = Math.floor(player.y / gridSize);
         const buildingFound = findBuilding(playerTileX, playerTileY);
@@ -397,7 +397,8 @@
             infoBoxEl.classList.add('opacity-0', 'hidden');
         }
 
-        requestAnimationFrame(draw);
+        // Minta bingkai animasi berikutnya
+        requestAnimationFrame(gameLoop);
     }
 
     // Set Mode function and update button styles
@@ -545,12 +546,14 @@
         const resizeCanvas = () => {
             canvas.width = Math.min(800, window.innerWidth - 40);
             canvas.height = canvas.width * 0.75;
-            draw();
+            gameLoop();
         };
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
         restartGame();
+
+        // Interval untuk pembaruan populasi dan kebutuhan, yang tidak memerlukan kecepatan 60 FPS
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
@@ -576,8 +579,9 @@
             population = totalPopulation;
         }, 5000);
         setInterval(calculateNeeds, 2000);
-        setInterval(update, 1000/60); // 60 FPS update
-        draw();
+
+        // Mulai loop game utama
+        gameLoop();
     }
 
     window.onload = init;
