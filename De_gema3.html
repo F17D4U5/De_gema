@@ -204,8 +204,9 @@
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e' },
-        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 10 },
-        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 15 },
+        // Meningkatkan baseIncome untuk membuat pendapatan lebih jelas.
+        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 50 },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 75 },
         road: { cost: 20, name: 'Jalan', color: '#64748b' }
     };
     
@@ -305,7 +306,6 @@
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
             if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
             if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-            // Memperbaiki kesalahan: Mengganti variabel touchX yang tidak terdefinisi dengan touchControls.right
             if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
             
             const playerScreenX = player.x - mapOffset.x;
@@ -332,7 +332,7 @@
                     // Pendapatan dari pajak populasi
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
-                    // Pendapatan dari pajak bisnis (rumus: pendapatan dasar * profitabilitas * tingkat pajak)
+                    // INI ADALAH LOGIKA YANG DIMINTA PENGGUNA: (Pendapatan Dasar) x (Profitabilitas) x (Pajak)
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
             });
