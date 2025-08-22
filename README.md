@@ -3,703 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Pembangunan Kota (No Save)</title>
+    <title>Simulasi Kota 2D Sederhana (HTML Murni)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            color: #334155;
-            padding: 1rem;
+            margin: 0;
+            background-color: #f3f4f6;
         }
         canvas {
-            background-color: #e2e8f0;
-            border: 2px solid #94a3b8;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             border-radius: 0.5rem;
-            cursor: crosshair;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            touch-action: none; /* Mencegah scrolling saat menyentuh kanvas */
+        }
+        .mode-active {
+            box-shadow: 0 0 0 4px #60a5fa;
+            transform: scale(1.05);
         }
         .info-box {
             position: absolute;
             background-color: rgba(255, 255, 255, 0.9);
-            border: 1px solid #cbd5e1;
-            padding: 8px;
+            padding: 0.5rem;
             border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            pointer-events: none;
-            z-index: 1000;
-            min-width: 150px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: opacity 0.2s ease-in-out;
-        }
-        .mode-active {
-            box-shadow: 0 0 0 3px #1e40af, 0 2px 4px rgba(0, 0, 0, 0.1);
+            pointer-events: none;
+            z-index: 10;
         }
         .control-button {
-            background-color: rgba(59, 130, 246, 0.8);
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 9999px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background-color 0.2s;
+            background-color: #d1d5db;
+            color: #4b5563;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.1s ease-in-out;
         }
         .control-button:active {
-            background-color: rgb(59, 130, 246);
+            transform: scale(0.95);
         }
         .modal {
             position: fixed;
-            top: 0;
+            z-index: 100;
             left: 0;
+            top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.6);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 2000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.3s linear;
         }
-        .modal.hidden {
-            display: none;
+        .modal-show {
+            visibility: visible;
+            opacity: 1;
         }
         .modal-content {
-            background-color: white;
+            background-color: #fff;
             padding: 2rem;
             border-radius: 0.75rem;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
             max-width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            color: #334155;
+            width: 500px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 1rem;
             margin-bottom: 1rem;
         }
-        .modal-header h2 {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
         .modal-close {
-            background: none;
-            border: none;
             font-size: 2rem;
+            font-weight: bold;
+            color: #9ca3af;
             cursor: pointer;
-            color: #94a3b8;
-            line-height: 1;
+            border: none;
+            background: none;
         }
         .modal-close:hover {
-            color: #475569;
+            color: #6b7280;
         }
         .guide-list li {
             margin-bottom: 0.5rem;
+            line-height: 1.5;
         }
     </style>
 </head>
-<body class="bg-gray-100 p-4 flex flex-col items-center justify-center">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+<div class="flex flex-col items-center w-full max-w-4xl">
+    <div class="text-center mb-4">
+        <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
+        <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
+    </div>
+
+    <div class="relative w-full flex justify-center">
+        <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
+        <div id="infoBox" class="info-box opacity-0 hidden"></div>
+    </div>
+
+    <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
+        <div>Uang: <span id="moneyDisplay"></span></div>
+        <div>Populasi: <span id="populationDisplay"></span></div>
+    </div>
     
-    <!-- Main container that centers all content -->
-    <div class="flex flex-col items-center w-full max-w-4xl">
-        <div class="text-center mb-4">
-            <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
-            <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
-        </div>
-
-        <div class="relative w-full flex justify-center">
-            <canvas id="gameCanvas" width="800" height="600" class="w-full h-auto max-w-full"></canvas>
-            <div id="infoBox" class="info-box hidden opacity-0"></div>
-        </div>
-
-        <div id="statusPanel" class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
-            <div>Uang: <span id="moneyDisplay">0</span></div>
-            <div>Populasi: <span id="populationDisplay">0</span></div>
-        </div>
-
-        <!-- Tampilan untuk User ID dan status penyimpanan (Hidden as no save functionality) -->
-        <div class="w-full text-center text-sm text-gray-500 mb-2">
-            <p id="saveStatus">Mode tanpa penyimpanan aktif.</p>
-        </div>
-
-        <!-- Touch Controls (Visible on mobile, hidden on desktop) -->
-        <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
-            <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
-                <div></div>
-                <button id="upButton" class="control-button text-2xl">▲</button>
-                <div></div>
-                <button id="leftButton" class="control-button text-2xl">◀</button>
-                <div></div>
-                <button id="rightButton" class="control-button text-2xl">►</button>
-                <div></div>
-                <button id="downButton" class="control-button text-2xl">▼</button>
-                <div></div>
-            </div>
-        </div>
-
-        <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
-            <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay">0</span>%</label>
-            <input type="range" id="taxRateSlider" min="0" max="50" value="0" class="w-full mt-1 accent-blue-500">
-        </div>
-
-        <!-- Building button container -->
-        <div class="mt-4 flex flex-wrap gap-2 justify-center">
-            <button id="moveButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Mode Pindah</button>
-            <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Rumah</button>
-            <button id="parkButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Taman</button>
-            <button id="storeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Toko</button>
-            <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Industri</button>
-            <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Jalan</button>
-            <button id="destroyButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-red-600 transition-colors">Hancurkan</button>
-            <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
-        </div>
-
-        <!-- Separate "Restart" button container -->
-        <div class="mt-4 flex justify-center">
-            <button id="restartButton" class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
+    <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
+        <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
+            <div></div>
+            <button id="upButton" class="control-button text-2xl">▲</button>
+            <div></div>
+            <button id="leftButton" class="control-button text-2xl">◀</button>
+            <div></div>
+            <button id="rightButton" class="control-button text-2xl">►</button>
+            <div></div>
+            <button id="downButton" class="control-button text-2xl">▼</button>
+            <div></div>
         </div>
     </div>
 
-    <!-- Guide Modal -->
-    <div id="guideModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Panduan Permainan</h2>
-                <button id="closeModal" class="modal-close">&times;</button>
-            </div>
-            <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
-            <ul class="guide-list mt-4">
-                <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta.</li>
-                <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
-                <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
-                <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
-                <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko dan Industri akan memberikan keuntungan.</li>
-                <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
-                <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
-            </ul>
-        </div>
+    <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
+        <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay"></span>%</label>
+        <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
     </div>
 
-    <script>
-        // Get canvas and 2D context
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const infoBox = document.getElementById('infoBox');
-        const moneyDisplay = document.getElementById('moneyDisplay');
-        const populationDisplay = document.getElementById('populationDisplay');
-        const taxRateSlider = document.getElementById('taxRateSlider');
-        const taxRateDisplay = document.getElementById('taxRateDisplay');
+    <div class="mt-4 flex flex-wrap gap-2 justify-center" id="buttonContainer">
+        <button id="moveModeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #3b82f6;">Mode Pindah</button>
+        <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #fde047;">Bangun Rumah</button>
+        <button id="parkButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #22c55e;">Bangun Taman</button>
+        <button id="storeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #f59e0b;">Bangun Toko</button>
+        <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #1f2937;">Bangun Industri</button>
+        <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #64748b;">Bangun Jalan</button>
+        <button id="destroyModeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #ef4444;">Hancurkan</button>
+        <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
+    </div>
+    
+    <div class="mt-4 flex justify-center">
+        <button id="restartButton" class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
+    </div>
+</div>
 
-        // Get new movement control buttons
-        const upButton = document.getElementById('upButton');
-        const downButton = document.getElementById('downButton');
-        const leftButton = document.getElementById('leftButton');
-        const rightButton = document.getElementById('rightButton');
+<div id="guideModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Panduan Permainan</h2>
+            <button id="modalCloseButton" class="modal-close">&times;</button>
+        </div>
+        <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
+        <ul class="guide-list mt-4">
+            <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta.</li>
+            <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
+            <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
+            <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
+            <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko dan Industri akan memberikan keuntungan.</li>
+            <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
+            <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
+        </ul>
+    </div>
+</div>
 
-        // Get modal elements and restart button
-        const guideButton = document.getElementById('guideButton');
-        const guideModal = document.getElementById('guideModal');
-        const closeModalButton = document.getElementById('closeModal');
-        const restartButton = document.getElementById('restartButton');
+<script>
+    // Game state variables
+    let money = 1000.00;
+    let population = 0;
+    let buildings = [];
+    let mapOffset = { x: 0, y: 0 };
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 5, color: '#ef4444' };
+    let mode = 'move';
+    let buildingType = 'house';
+    let taxRate = 5;
+    let infoBox = { visible: false, x: 0, y: 0, content: '' };
+    
+    // Game constants
+    const gridSize = 40;
+    const incomeInterval = 1000;
+    const incomePerPersonPerSecond = 10;
+    const influenceRadiusInBlocks = 7;
+    let lastIncomeTime = Date.now();
+    const keys = {};
+    const touchControls = { up: false, down: false, left: false, right: false };
 
-        // Adjust canvas size for responsiveness
-        function resizeCanvas() {
-            canvas.width = Math.min(800, window.innerWidth - 40);
-            canvas.height = canvas.width * 0.75;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+    // Building data
+    const buildingStats = {
+        house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
+        park: { cost: 50, name: 'Taman', color: '#22c55e' },
+        store: { cost: 200, name: 'Toko', color: '#f59e0b' },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937' },
+        road: { cost: 20, name: 'Jalan', color: '#64748b' }
+    };
+    
+    // DOM elements
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const moneyDisplay = document.getElementById('moneyDisplay');
+    const populationDisplay = document.getElementById('populationDisplay');
+    const taxRateDisplay = document.getElementById('taxRateDisplay');
+    const taxRateSlider = document.getElementById('taxRateSlider');
+    const infoBoxEl = document.getElementById('infoBox');
+    const modal = document.getElementById('guideModal');
 
-        // Game variables
-        const gridSize = 40;
-        let mapOffset = { x: 0, y: 0 };
-        let buildings = []; 
-        let mode = 'move'; 
-        let buildingType = 'house';
-        let isGameReady = true; // Game is always ready as there's no loading
+    // UI Buttons
+    const buttons = {
+        move: document.getElementById('moveModeButton'),
+        house: document.getElementById('houseButton'),
+        park: document.getElementById('parkButton'),
+        store: document.getElementById('storeButton'),
+        industrial: document.getElementById('industrialButton'),
+        road: document.getElementById('roadButton'),
+        destroy: document.getElementById('destroyModeButton'),
+        restart: document.getElementById('restartButton'),
+        guide: document.getElementById('guideButton'),
+        modalClose: document.getElementById('modalCloseButton')
+    };
+    
+    // Mobile controls
+    const upButton = document.getElementById('upButton');
+    const downButton = document.getElementById('downButton');
+    const leftButton = document.getElementById('leftButton');
+    const rightButton = document.getElementById('rightButton');
 
-        // Currency and population system
-        let money = 1000.00;
-        let population = 0;
-        let lastIncomeTime = Date.now();
-        const incomeInterval = 1000;
-        let taxRate = 5;
-        const incomePerPersonPerSecond = 10;
-        
-        const influenceRadiusInBlocks = 7; 
+    // Helper Functions
+    function formatRupiah(amount) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
 
-        // Building costs and stats
-        const buildingStats = {
-            house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
-            park: { cost: 50, name: 'Taman', color: '#22c55e' },
-            store: { cost: 200, income: 0, workers: 10, name: 'Toko', color: '#f59e0b' },
-            industrial: { cost: 300, income: 0, workers: 20, name: 'Industri', color: '#1f2937' },
-            road: { cost: 20, name: 'Jalan', color: '#64748b' }
-        };
-        const moveButtonColor = '#3b82f6';
-        const destroyButtonColor = '#ef4444';
+    function findBuilding(tileX, tileY) {
+        return buildings.find(b =>
+            Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
+        );
+    }
+    
+    function isConnectedToRoad(tileX, tileY) {
+        const adjacentTiles = [
+            { x: tileX, y: tileY - 1 },
+            { x: tileX, y: tileY + 1 },
+            { x: tileX - 1, y: tileY },
+            { x: tileX + 1, y: tileY }
+        ];
+        return !!adjacentTiles.find(tile => {
+            const building = findBuilding(tile.x, tile.y);
+            return building && building.type === 'road';
+        });
+    }
 
-        // Player object
-        const player = {
-            x: 0,
-            y: 0,
-            width: gridSize * 0.7,
-            height: gridSize * 0.7,
-            speed: 5,
-            color: '#ef4444' // Red
-        };
-        
-        // --- TONE.JS AUDIO SETUP ---
-        let audioContextStarted = false;
-        
-        const buildSynth = new Tone.Synth({
-            oscillator: { type: "square" },
-            envelope: {
-                attack: 0.01,
-                decay: 0.2,
-                sustain: 0,
-                release: 0.1
-            }
-        }).toDestination();
-
-        const destroySynth = new Tone.MembraneSynth({
-            pitchDecay: 0.05,
-            octaves: 10,
-            envelope: {
-                attack: 0.001,
-                decay: 0.4,
-                sustain: 0.01,
-                release: 0.04,
-                attackCurve: "exponential"
-            }
-        }).toDestination();
-
-        const buttonSynth = new Tone.PluckSynth({
-            attackNoise: 1,
-            dampening: 4000,
-            release: 0.2
-        }).toDestination();
-
-        /**
-         * Plays a sound effect based on a keyword.
-         * @param {string} type - The type of sound to play ('build', 'destroy', 'button').
-         */
-        function playActionSound(type) {
-            if (!audioContextStarted) {
-                Tone.start();
-                audioContextStarted = true;
-            }
-
-            if (type === 'build') {
-                buildSynth.triggerAttackRelease("C5", "8n");
-            } else if (type === 'destroy') {
-                destroySynth.triggerAttackRelease("C1", "16n");
-            } else if (type === 'button') {
-                buttonSynth.triggerAttackRelease("G4", "8n");
-            }
-        }
-        
-        function restartGame() {
-            money = 1000.00;
-            population = 0;
-            buildings = [];
-            mapOffset = { x: 0, y: 0 };
-            player.x = 0;
-            player.y = 0;
-            mode = 'move';
-            buildingType = 'house';
-            taxRateSlider.value = 5;
-            taxRate = 5;
-            
-            updateUI();
-            updateAllButtons();
-        }
-
-        /**
-         * Converts a number to Rupiah currency format with decimals.
-         * @param {number} amount - The amount of money.
-         * @returns {string} - The formatted text with Rp. prefix.
-         */
-        function formatRupiah(amount) {
-            return new Intl.NumberFormat('id-ID', {
-                style: 'currency',
-                currency: 'IDR',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(amount);
-        }
-
-        function updateUI() {
-            moneyDisplay.textContent = formatRupiah(money);
-            populationDisplay.textContent = population;
-            taxRateDisplay.textContent = taxRate;
-        }
-
-        function drawGrid() {
-            ctx.strokeStyle = '#94a3b8';
-            ctx.lineWidth = 1;
-            const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
-            const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
-
-            for (let x = 0; x < screenGridSizeX; x++) {
-                const drawX = (x * gridSize) - (mapOffset.x % gridSize);
-                ctx.beginPath();
-                ctx.moveTo(drawX, 0);
-                ctx.lineTo(drawX, canvas.height);
-                ctx.stroke();
-            }
-
-            for (let y = 0; y < screenGridSizeY; y++) {
-                const drawY = (y * gridSize) - (mapOffset.y % gridSize);
-                ctx.beginPath();
-                ctx.moveTo(0, drawY);
-                ctx.lineTo(canvas.width, drawY);
-                ctx.stroke();
-            }
-        }
-
-        function drawBuildings() {
-            buildings.forEach(building => {
-                const drawX = building.x - mapOffset.x;
-                const drawY = building.y - mapOffset.y;
-
-                if (drawX + gridSize < 0 || drawX > canvas.width || drawY + gridSize < 0 || drawY > canvas.height) {
-                    return;
-                }
-                
-                ctx.fillStyle = building.color;
-                ctx.fillRect(drawX, drawY, gridSize, gridSize);
-                
-                if (building.type !== 'road') {
-                    ctx.strokeStyle = '#334155';
-                    ctx.strokeRect(drawX, drawY, gridSize, gridSize);
-                }
+    function calculateNeeds() {
+        buildings.forEach(building => {
+            const tileX = Math.floor(building.x / gridSize);
+            const tileY = Math.floor(building.y / gridSize);
+            const isConnected = isConnectedToRoad(tileX, tileY);
+            const nearbyBuildings = buildings.filter(b => {
+                const distanceX = Math.abs(building.x - b.x);
+                const distanceY = Math.abs(building.y - b.y);
+                return b.id !== building.id && distanceX <= gridSize * influenceRadiusInBlocks && distanceY <= gridSize * influenceRadiusInBlocks;
             });
-        }
-        
-        function isConnectedToRoad(tileX, tileY) {
-            const adjacentTiles = [
-                { x: tileX, y: tileY - 1 },
-                { x: tileX, y: tileY + 1 },
-                { x: tileX - 1, y: tileY },
-                { x: tileX + 1, y: tileY }
-            ];
 
-            for (const tile of adjacentTiles) {
-                const road = buildings.find(b =>
-                    Math.floor(b.x / gridSize) === tile.x &&
-                    Math.floor(b.y / gridSize) === tile.y &&
-                    b.type === 'road'
-                );
-                if (road) {
-                    return true;
-                }
+            if (building.type === 'house') {
+                const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
+                let happinessBonus = nearbyParks * 15;
+                if (isConnected) happinessBonus += 30;
+                let taxPenalty = taxRate > 10 ? (taxRate - 10) * 2 : 0;
+                happinessBonus -= taxPenalty;
+                building.needs.happiness = Math.max(0, Math.min(100, Math.floor(happinessBonus + 50)));
+            } else if (building.type === 'store' || building.type === 'industrial') {
+                const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
+                let profitabilityBonus = nearbyHouses * 20;
+                if (isConnected) profitabilityBonus += 40;
+                if (population === 0) profitabilityBonus = 0;
+                building.needs.profitability = Math.min(100, profitabilityBonus);
             }
-            return false;
-        }
+        });
+    }
 
-        function calculateNeeds() {
-            buildings.forEach(building => {
-                const tileX = Math.floor(building.x / gridSize);
-                const tileY = Math.floor(building.y / gridSize);
-                const isConnected = isConnectedToRoad(tileX, tileY);
-                
-                const nearbyBuildings = buildings.filter(b => {
-                    const distanceX = Math.abs(building.x - b.x);
-                    const distanceY = Math.abs(building.y - b.y);
-                    return b.id !== building.id && distanceX <= gridSize * influenceRadiusInBlocks && distanceY <= gridSize * influenceRadiusInBlocks;
-                });
-                
-                if (building.type === 'house') {
-                    const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
-                    let happinessBonus = nearbyParks * 15;
-                    
-                    if (isConnected) {
-                        happinessBonus += 30;
-                    }
+    // Main Game Loop
+    function update() {
+        // Player movement
+        if (mode === 'move') {
+            let moveX = 0, moveY = 0;
+            if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
+            if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
+            if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+            if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
 
-                    let taxPenalty = 0;
-                    if (taxRate > 10) {
-                        taxPenalty = (taxRate - 10) * 2;
-                    }
-                    happinessBonus -= taxPenalty;
-
-                    building.needs.happiness = Math.max(0, Math.min(100, Math.floor(happinessBonus + 50)));
-                }
-                
-                if (building.type === 'store') {
-                    const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
-                    let profitabilityBonus = nearbyHouses * 20;
-
-                    if (isConnected) {
-                        profitabilityBonus += 40;
-                    }
-                    
-                    if (population === 0) {
-                        profitabilityBonus = 0;
-                    }
-
-                    building.needs.profitability = Math.min(100, profitabilityBonus);
-                }
-
-                if (building.type === 'industrial') {
-                     const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
-                    let profitabilityBonus = nearbyHouses * 20;
-
-                    if (isConnected) {
-                        profitabilityBonus += 40;
-                    }
-
-                    if (population === 0) {
-                        profitabilityBonus = 0;
-                    }
-
-                    building.needs.profitability = Math.min(100, profitabilityBonus);
-                }
-            });
-        }
-
-        function drawPlayer() {
             const playerScreenX = player.x - mapOffset.x;
             const playerScreenY = player.y - mapOffset.y;
-            ctx.fillStyle = player.color;
-            ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
+            const edgeBuffer = 200;
+
+            if (playerScreenX + moveX < edgeBuffer) mapOffset.x -= player.speed;
+            if (playerScreenX + moveX > canvas.width - edgeBuffer) mapOffset.x += player.speed;
+            if (playerScreenY + moveY < edgeBuffer) mapOffset.y -= player.speed;
+            if (playerScreenY + moveY > canvas.height - edgeBuffer) mapOffset.y += player.speed;
+            
+            player.x += moveX;
+            player.y += moveY;
+            const worldSize = 5000;
+            player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
+            player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        let keys = {};
-        let touchControls = {
-            up: false,
-            down: false,
-            left: false,
-            right: false
-        };
+        // Update money
+        if (Date.now() - lastIncomeTime > incomeInterval) {
+            let totalIncome = population * incomePerPersonPerSecond * (taxRate / 100);
+            buildings.forEach(b => {
+                if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
+                    totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
+                }
+            });
+            money += totalIncome;
+            lastIncomeTime = Date.now();
+        }
 
-        document.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-            const key = e.key.toLowerCase();
-            if (key === 'm') {
-                mode = 'move';
-            } else if (key === 'h') {
-                mode = 'build';
-                buildingType = 'house';
-            } else if (key === 'p') {
-                mode = 'build';
-                buildingType = 'park';
-            } else if (key === 't') {
-                mode = 'build';
-                buildingType = 'store';
-            } else if (key === 'i') {
-                mode = 'build';
-                buildingType = 'industrial';
-            } else if (key === 'r') {
-                mode = 'build';
-                buildingType = 'road';
-            } else if (key === 'x') {
-                mode = 'destroy';
+        // Update display
+        moneyDisplay.textContent = formatRupiah(money);
+        populationDisplay.textContent = population;
+    }
+
+    function draw() {
+        // Clear canvas
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw grid
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1;
+        const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
+        const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
+        for (let x = 0; x < screenGridSizeX; x++) {
+            const drawX = (x * gridSize) - (mapOffset.x % gridSize);
+            ctx.beginPath();
+            ctx.moveTo(drawX, 0);
+            ctx.lineTo(drawX, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < screenGridSizeY; y++) {
+            const drawY = (y * gridSize) - (mapOffset.y % gridSize);
+            ctx.beginPath();
+            ctx.moveTo(0, drawY);
+            ctx.lineTo(canvas.width, drawY);
+            ctx.stroke();
+        }
+
+        // Draw buildings
+        buildings.forEach(building => {
+            const drawX = building.x - mapOffset.x;
+            const drawY = building.y - mapOffset.y;
+            if (drawX + gridSize < 0 || drawX > canvas.width || drawY + gridSize < 0 || drawY > canvas.height) return;
+            ctx.fillStyle = building.color;
+            ctx.fillRect(drawX, drawY, gridSize, gridSize);
+            if (building.type !== 'road') {
+                ctx.strokeStyle = '#334155';
+                ctx.strokeRect(drawX, drawY, gridSize, gridSize);
             }
-            updateAllButtons();
         });
-        document.addEventListener('keyup', (e) => {
+
+        // Draw player
+        const playerScreenX = player.x - mapOffset.x;
+        const playerScreenY = player.y - mapOffset.y;
+        ctx.fillStyle = player.color;
+        ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
+
+        // Update info box
+        const playerTileX = Math.floor(player.x / gridSize);
+        const playerTileY = Math.floor(player.y / gridSize);
+        const buildingFound = findBuilding(playerTileX, playerTileY);
+
+        if (buildingFound) {
+            let infoText = `
+                <h3 class="font-bold text-lg mb-1">${buildingStats[buildingFound.type].name}</h3>
+                <p>Posisi: (${Math.floor(buildingFound.x/gridSize)}, ${Math.floor(buildingFound.y/gridSize)})</p>
+            `;
+            if (buildingFound.type === 'house') {
+                infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
+                infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
+                const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
+                infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
+            } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
+                infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
+            }
+            infoBoxEl.innerHTML = infoText;
+            infoBoxEl.style.left = `${playerScreenX + player.width + 10}px`;
+            infoBoxEl.style.top = `${playerScreenY}px`;
+            infoBoxEl.classList.remove('opacity-0', 'hidden');
+        } else {
+            infoBoxEl.classList.add('opacity-0', 'hidden');
+        }
+
+        requestAnimationFrame(draw);
+    }
+
+    // Set Mode function and update button styles
+    function setMode(newMode, newType) {
+        mode = newMode;
+        if (newType) {
+            buildingType = newType;
+        }
+        updateButtonStyles();
+    }
+    
+    function updateButtonStyles() {
+        for (const btn in buttons) {
+            if (buttons[btn] && btn !== 'restart' && btn !== 'guide' && btn !== 'modalClose') {
+                buttons[btn].classList.remove('mode-active');
+            }
+        }
+        
+        if (mode === 'move') {
+            buttons.move.classList.add('mode-active');
+        } else if (mode === 'destroy') {
+            buttons.destroy.classList.add('mode-active');
+        } else if (mode === 'build') {
+            if (buildingType) {
+                buttons[buildingType].classList.add('mode-active');
+            }
+        }
+    }
+
+    function restartGame() {
+        money = 1000.00;
+        population = 0;
+        buildings = [];
+        mapOffset = { x: 0, y: 0 };
+        player = { x: 0, y: 0, width: 28, height: 28, speed: 5, color: '#ef4444' };
+        mode = 'move';
+        buildingType = 'house';
+        taxRate = 5;
+        infoBox = { visible: false, x: 0, y: 0, content: '' };
+        taxRateDisplay.textContent = taxRate;
+        taxRateSlider.value = taxRate;
+        updateButtonStyles();
+    }
+
+    // Initial setup function
+    function init() {
+        // Tambahkan semua event listener di sini
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key.toLowerCase() === 'm') setMode('move', null);
+            else if (e.key.toLowerCase() === 'h') setMode('build', 'house');
+            else if (e.key.toLowerCase() === 'p') setMode('build', 'park');
+            else if (e.key.toLowerCase() === 't') setMode('build', 'store');
+            else if (e.key.toLowerCase() === 'i') setMode('build', 'industrial');
+            else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
+            else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
+        });
+
+        window.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
         });
 
-        taxRateSlider.addEventListener('input', (e) => {
-            taxRate = parseInt(e.target.value);
-            taxRateDisplay.textContent = taxRate;
-            calculateNeeds();
-        });
+        upButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.up = true; });
+        upButton.addEventListener('touchend', () => touchControls.up = false);
+        downButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.down = true; });
+        downButton.addEventListener('touchend', () => touchControls.down = false);
+        leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.left = true; });
+        leftButton.addEventListener('touchend', () => touchControls.left = false);
+        rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.right = true; });
+        rightButton.addEventListener('touchend', () => touchControls.right = false);
 
-        function setupButtonControls(button, direction) {
-            const startAction = (e) => {
-                e.preventDefault();
-                touchControls[direction] = true;
-            };
-
-            const endAction = (e) => {
-                e.preventDefault();
-                touchControls[direction] = false;
-            };
-
-            button.addEventListener('mousedown', startAction);
-            button.addEventListener('mouseup', endAction);
-            button.addEventListener('touchstart', startAction, { passive: false });
-            button.addEventListener('touchend', endAction, { passive: false });
-        }
-        
-        setupButtonControls(upButton, 'up');
-        setupButtonControls(downButton, 'down');
-        setupButtonControls(leftButton, 'left');
-        setupButtonControls(rightButton, 'right');
-        
-        function checkPopulationChange() {
-            if (!isGameReady) return;
-
-            const houseBuildings = buildings.filter(b => b.type === 'house');
-            
-            houseBuildings.forEach(house => {
-                let changeAmount = 0;
-                let logMessage = '';
-
-                if (taxRate <= 20) {
-                    changeAmount = Math.floor(Math.random() * 2) + 1;
-                    logMessage = `population increases due to low taxes`;
-                } else if (taxRate <= 45) {
-                    const increaseChance = (45 - taxRate) / 25;
-                    const decreaseChance = (taxRate - 20) / 25;
-                    
-                    if (Math.random() < increaseChance) {
-                        changeAmount += Math.floor(Math.random() * 2) + 1;
-                        logMessage = `gained ${changeAmount} new residents`;
-                    }
-                    
-                    if (Math.random() < decreaseChance) {
-                        changeAmount -= Math.floor(Math.random() * 2) + 1;
-                        logMessage = `lost ${Math.abs(changeAmount)} residents`;
-                    }
-                } else {
-                    changeAmount = -(Math.floor(Math.random() * 2) + 1);
-                    logMessage = `population decreases due to very high taxes`;
-                }
-                
-                const oldPopulation = house.population;
-                let newPopulation = oldPopulation + changeAmount;
-                
-                if (taxRate > 40 && newPopulation < 0) {
-                    newPopulation = 0;
-                } else if (newPopulation < 1) {
-                    newPopulation = 1;
-                }
-
-                house.population = Math.min(buildingStats.house.population, newPopulation);
-                
-                if (house.population !== oldPopulation) {
-                    console.log(`House at (${Math.floor(house.x/gridSize)}, ${Math.floor(house.y/gridSize)}) population changed from ${oldPopulation} to ${house.population}`);
-                }
-            });
-        }
-
-        setInterval(checkPopulationChange, 5000); 
-
-        function update() {
-            if (!isGameReady) return;
-            
-            if (mode === 'move') {
-                let moveX = 0;
-                let moveY = 0;
-
-                if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
-                if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
-                if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-                if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
-
-                const playerScreenX = player.x - mapOffset.x;
-                const playerScreenY = player.y - mapOffset.y;
-                const edgeBuffer = 200;
-
-                if (playerScreenX + moveX < edgeBuffer) mapOffset.x -= player.speed;
-                if (playerScreenX + moveX > canvas.width - edgeBuffer) mapOffset.x += player.speed;
-                if (playerScreenY + moveY < edgeBuffer) mapOffset.y -= player.speed;
-                if (playerScreenY + moveY > canvas.height - edgeBuffer) mapOffset.y += player.speed;
-                
-                player.x += moveX;
-                player.y += moveY;
-
-                const worldSize = 5000;
-                player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
-                player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
-            }
-
-            population = 0;
-            buildings.forEach(b => {
-                if (b.type === 'house') {
-                    population += b.population;
-                }
-            });
-
-            const now = Date.now();
-            if (now - lastIncomeTime > incomeInterval) {
-                let totalIncome = 0;
-                
-                totalIncome += population * incomePerPersonPerSecond * (taxRate / 100);
-
-                buildings.forEach(b => {
-                    if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
-                        totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
-                    }
-                });
-
-                money += totalIncome;
-                lastIncomeTime = now;
-                updateUI();
-            }
-        }
-
-        function draw() {
-            ctx.fillStyle = '#f8fafc';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            drawGrid();
-            drawBuildings();
-            drawPlayer();
-
-            const playerTileX = Math.floor(player.x / gridSize);
-            const playerTileY = Math.floor(player.y / gridSize);
-            let buildingFound = null;
-            buildings.forEach(b => {
-                if (Math.floor(b.x / gridSize) === playerTileX && Math.floor(b.y / gridSize) === playerTileY) {
-                    buildingFound = b;
-                }
-            });
-
-            if (buildingFound) {
-                let infoText = `
-                    <h3 class="font-bold text-lg mb-1">${buildingStats[buildingFound.type].name}</h3>
-                    <p>Posisi: (${Math.floor(buildingFound.x/gridSize)}, ${Math.floor(buildingFound.y/gridSize)})</p>
-                `;
-                if (buildingFound.type === 'house') {
-                    infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
-                    infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
-                    const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
-                    infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
-                } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
-                    infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
-                }
-
-                infoBox.innerHTML = infoText;
-                infoBox.style.left = `${(player.x - mapOffset.x) + player.width + 10}px`;
-                infoBox.style.top = `${(player.y - mapOffset.y) - infoBox.offsetHeight}px`;
-                infoBox.classList.remove('hidden');
-                infoBox.classList.add('opacity-100');
-            } else {
-                infoBox.classList.remove('opacity-100');
-                infoBox.classList.add('hidden');
-            }
-
-            requestAnimationFrame(draw);
-        }
-
-        function gameLoop() {
-            update();
-            draw();
-        }
-        
-        canvas.addEventListener('click', handleCanvasClick);
-        canvas.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent("click", {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            canvas.dispatchEvent(mouseEvent);
-        });
-
-        function handleCanvasClick(e) {
-            playActionSound('button');
+        canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -709,171 +479,109 @@
             const tileY = Math.floor((mouseY + mapOffset.y) / gridSize);
 
             if (mode === 'build') {
-                const existingBuilding = buildings.find(b =>
-                    Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
-                );
-
+                const existingBuilding = findBuilding(tileX, tileY);
                 const stats = buildingStats[buildingType];
                 const cost = stats.cost;
-
                 if (!existingBuilding && money >= cost) {
                     const newBuilding = {
-                        id: Date.now(),
-                        x: tileX * gridSize,
-                        y: tileY * gridSize,
-                        type: buildingType,
-                        color: stats.color,
-                        population: stats.population || 0,
-                        needs: {
-                            happiness: 0,
-                            profitability: 0
-                        }
+                        id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
+                        population: stats.population || 0, needs: { happiness: 0, profitability: 0 }
                     };
-                    
-                    money -= cost;
                     buildings.push(newBuilding);
+                    money -= cost;
                     calculateNeeds();
-                    updateUI();
-                    playActionSound('build');
                 } else if (existingBuilding) {
-                    infoBox.innerHTML = `<p class="text-red-500">Sudah ada bangunan di sini!</p>`;
-                    infoBox.classList.remove('hidden');
-                    infoBox.classList.add('opacity-100');
-                    setTimeout(() => infoBox.classList.remove('opacity-100'), 1000);
+                    infoBoxEl.innerHTML = `<p class="text-red-500">Sudah ada bangunan di sini!</p>`;
+                    infoBoxEl.classList.remove('opacity-0', 'hidden');
+                    infoBoxEl.style.left = `${mouseX + 10}px`;
+                    infoBoxEl.style.top = `${mouseY}px`;
+                    setTimeout(() => infoBoxEl.classList.add('opacity-0', 'hidden'), 1000);
                 } else if (money < cost) {
-                    infoBox.innerHTML = `<p class="text-red-500">Uang tidak cukup! Biaya: ${formatRupiah(cost)}</p>`;
-                    infoBox.classList.remove('hidden');
-                    infoBox.classList.add('opacity-100');
-                    setTimeout(() => infoBox.classList.remove('opacity-100'), 1000);
+                    infoBoxEl.innerHTML = `<p class="text-red-500">Uang tidak cukup! Biaya: ${formatRupiah(cost)}</p>`;
+                    infoBoxEl.classList.remove('opacity-0', 'hidden');
+                    infoBoxEl.style.left = `${mouseX + 10}px`;
+                    infoBoxEl.style.top = `${mouseY}px`;
+                    setTimeout(() => infoBoxEl.classList.add('opacity-0', 'hidden'), 1000);
                 }
             } else if (mode === 'destroy') {
                 const buildingIndex = buildings.findIndex(b =>
                     Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
                 );
-
                 if (buildingIndex !== -1) {
                     const destroyedBuilding = buildings.splice(buildingIndex, 1)[0];
-                    money += buildingStats[destroyedBuilding.type].cost * 0.5;
+                    const refund = buildingStats[destroyedBuilding.type].cost * 0.5;
+                    money += refund;
                     calculateNeeds();
-                    updateUI();
-                    playActionSound('destroy');
                 }
             }
-        }
-
-        const moveButton = document.getElementById('moveButton');
-        const houseButton = document.getElementById('houseButton');
-        const parkButton = document.getElementById('parkButton');
-        const storeButton = document.getElementById('storeButton');
-        const industrialButton = document.getElementById('industrialButton');
-        const roadButton = document.getElementById('roadButton');
-        const destroyButton = document.getElementById('destroyButton');
-        
-        const allButtons = [
-            moveButton, houseButton, parkButton, storeButton, industrialButton, 
-            roadButton, destroyButton, guideButton, closeModalButton, restartButton
-        ];
-        allButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                playActionSound('button');
-            });
         });
 
-        function updateAllButtons() {
-            const modeButtons = [
-                { id: moveButton, mode: 'move', type: 'move' },
-                { id: houseButton, mode: 'build', type: 'house' },
-                { id: parkButton, mode: 'build', type: 'park' },
-                { id: storeButton, mode: 'build', type: 'store' },
-                { id: industrialButton, mode: 'build', type: 'industrial' },
-                { id: roadButton, mode: 'build', type: 'road' },
-                { id: destroyButton, mode: 'destroy', type: 'destroy' }
-            ];
-            
-            modeButtons.forEach(btn => {
-                btn.id.classList.remove('mode-active');
-                if (btn.type === 'move') {
-                    btn.id.style.backgroundColor = moveButtonColor;
-                } else if (btn.type === 'destroy') {
-                    btn.id.style.backgroundColor = destroyButtonColor;
-                } else {
-                    btn.id.style.backgroundColor = buildingStats[btn.type].color;
-                }
-            });
-
-            if (mode === 'move') {
-                moveButton.classList.add('mode-active');
-            } else if (mode === 'destroy') {
-                destroyButton.classList.add('mode-active');
-            } else if (mode === 'build') {
-                if (buildingType === 'house') {
-                    houseButton.classList.add('mode-active');
-                } else if (buildingType === 'park') {
-                    parkButton.classList.add('mode-active');
-                } else if (buildingType === 'store') {
-                    storeButton.classList.add('mode-active');
-                } else if (buildingType === 'industrial') {
-                    industrialButton.classList.add('mode-active');
-                } else if (buildingType === 'road') {
-                    roadButton.classList.add('mode-active');
-                }
-            }
-        }
-
-        moveButton.addEventListener('click', () => {
-            mode = 'move';
-            updateAllButtons();
+        taxRateSlider.addEventListener('input', (e) => {
+            taxRate = parseInt(e.target.value);
+            taxRateDisplay.textContent = taxRate;
+            calculateNeeds();
         });
 
-        houseButton.addEventListener('click', () => {
-            mode = 'build';
-            buildingType = 'house';
-            updateAllButtons();
+        buttons.restart.addEventListener('click', restartGame);
+        buttons.move.addEventListener('click', () => setMode('move', null));
+        buttons.house.addEventListener('click', () => setMode('build', 'house'));
+        buttons.park.addEventListener('click', () => setMode('build', 'park'));
+        buttons.store.addEventListener('click', () => setMode('build', 'store'));
+        buttons.industrial.addEventListener('click', () => setMode('build', 'industrial'));
+        buttons.road.addEventListener('click', () => setMode('build', 'road'));
+        buttons.destroy.addEventListener('click', () => setMode('destroy', null));
+        buttons.guide.addEventListener('click', () => {
+            modal.classList.add('modal-show');
         });
-        parkButton.addEventListener('click', () => {
-            mode = 'build';
-            buildingType = 'park';
-            updateAllButtons();
+        buttons.modalClose.addEventListener('click', () => {
+            modal.classList.remove('modal-show');
         });
-        storeButton.addEventListener('click', () => {
-            mode = 'build';
-            buildingType = 'store';
-            updateAllButtons();
-        });
-        industrialButton.addEventListener('click', () => {
-            mode = 'build';
-            buildingType = 'industrial';
-            updateAllButtons();
-        });
-        roadButton.addEventListener('click', () => {
-            mode = 'build';
-            buildingType = 'road';
-            updateAllButtons();
-        });
-        destroyButton.addEventListener('click', () => {
-            mode = 'destroy';
-            updateAllButtons();
-        });
-
-        restartButton.addEventListener('click', restartGame);
-        
-        guideButton.addEventListener('click', () => {
-            guideModal.classList.remove('hidden');
-        });
-        
-        function closeGuideModal() {
-            guideModal.classList.add('hidden');
-        }
-
-        guideModal.addEventListener('click', (event) => {
-            if (event.target === guideModal || event.target === closeModalButton) {
-                closeGuideModal();
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.remove('modal-show');
             }
         });
-        
-        // Initial setup and start game loop
+
+        const resizeCanvas = () => {
+            canvas.width = Math.min(800, window.innerWidth - 40);
+            canvas.height = canvas.width * 0.75;
+            draw();
+        };
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
         restartGame();
-        gameLoop();
-    </script>
+        setInterval(() => {
+            buildings.filter(b => b.type === 'house').forEach(house => {
+                let changeAmount = 0;
+                if (taxRate <= 20) {
+                    changeAmount = Math.floor(Math.random() * 2) + 1;
+                } else if (taxRate <= 45) {
+                    const increaseChance = (45 - taxRate) / 25;
+                    const decreaseChance = (taxRate - 20) / 25;
+                    if (Math.random() < increaseChance) changeAmount += Math.floor(Math.random() * 2) + 1;
+                    if (Math.random() < decreaseChance) changeAmount -= Math.floor(Math.random() * 2) + 1;
+                } else {
+                    changeAmount = -(Math.floor(Math.random() * 2) + 1);
+                }
+                let newPopulation = house.population + changeAmount;
+                if (taxRate > 40 && newPopulation < 0) newPopulation = 0;
+                else if (newPopulation < 1) newPopulation = 1;
+                house.population = Math.min(buildingStats.house.population, newPopulation);
+            });
+            let totalPopulation = 0;
+            buildings.forEach(b => {
+                if (b.type === 'house') totalPopulation += b.population;
+            });
+            population = totalPopulation;
+        }, 5000);
+        setInterval(calculateNeeds, 2000);
+        setInterval(update, 1000/60); // 60 FPS update
+        draw();
+    }
+
+    window.onload = init;
+</script>
+
 </body>
 </html>
