@@ -118,7 +118,7 @@
         </div>
 
         <div id="statusPanel" class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
-            <div>Uang: <span id="moneyDisplay">1000</span></div>
+            <div>Uang: <span id="moneyDisplay">0</span></div>
             <div>Populasi: <span id="populationDisplay">0</span></div>
         </div>
 
@@ -144,8 +144,8 @@
         </div>
 
         <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
-            <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay">5</span>%</label>
-            <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500">
+            <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay">0</span>%</label>
+            <input type="range" id="taxRateSlider" min="0" max="50" value="0" class="w-full mt-1 accent-blue-500">
         </div>
 
         <!-- Container tombol bangunan -->
@@ -229,6 +229,7 @@
         let buildings = []; 
         let mode = 'move'; 
         let buildingType = 'house';
+        let isGameReady = false;
 
         // Currency and population system
         let money = 0;
@@ -316,18 +317,20 @@
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        let db, auth, userId;
         
-        let userId = null;
-        let authListener = null;
-
         /**
          * Main function to initialize Firebase and start the game.
          */
         async function initializeFirebaseAndGame() {
             try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Set the status message to be more descriptive
+                saveStatusDisplay.textContent = "Menghubungkan ke Firebase...";
+                
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 } else {
@@ -336,19 +339,20 @@
                 
                 userId = auth.currentUser?.uid;
                 if (!userId) {
-                    console.error("User ID not available.");
-                    return;
+                    throw new Error("User ID not available after authentication.");
                 }
                 userIdDisplay.textContent = userId;
                 
                 // Now that we have a user ID, we can start loading and saving data
+                saveStatusDisplay.textContent = "Memuat progres dari Firestore...";
                 loadGame();
                 
                 // Start a timer for automatic saving
                 setInterval(saveGame, 5000); // Auto-save every 5 seconds
 
             } catch (error) {
-                console.error("Firebase auth error: ", error);
+                console.error("Firebase initialization or auth error: ", error);
+                saveStatusDisplay.textContent = "Gagal memuat. Periksa koneksi atau coba lagi.";
             }
         }
         
@@ -356,7 +360,7 @@
          * Saves the current game state to Firestore.
          */
         async function saveGame() {
-            if (!userId) return;
+            if (!isGameReady || !userId) return;
             saveStatusDisplay.textContent = "Menyimpan...";
             try {
                 // Prepare game state for saving
@@ -391,7 +395,11 @@
          * Loads the game state from Firestore using a real-time listener.
          */
         function loadGame() {
-            if (!userId) return;
+            if (!userId) {
+                saveStatusDisplay.textContent = "ID pengguna tidak ditemukan. Memulai game baru.";
+                restartGame(true);
+                return;
+            }
             const docRef = doc(db, `/artifacts/${appId}/public/data/game-state`, userId);
 
             // Use onSnapshot for a real-time listener
@@ -400,14 +408,13 @@
                     const data = docSnap.data();
                     
                     // Update game state with loaded data
-                    money = data.money || 1000.00;
-                    population = data.population || 0;
-                    mapOffset = data.mapOffset || { x: 0, y: 0 };
-                    player.x = data.playerX || 0;
-                    player.y = data.playerY || 0;
-                    taxRate = data.taxRate || 5;
-
-                    // Parse the JSON string back into an object
+                    money = data.money;
+                    population = data.population;
+                    mapOffset = data.mapOffset;
+                    player.x = data.playerX;
+                    player.y = data.playerY;
+                    taxRate = data.taxRate;
+                    
                     try {
                          buildings = JSON.parse(data.buildings) || [];
                     } catch(e) {
@@ -415,25 +422,34 @@
                          buildings = [];
                     }
                     
-                    // Update UI
                     taxRateSlider.value = taxRate;
                     updateUI();
                     console.log("Game data loaded successfully.");
                     saveStatusDisplay.textContent = "Progres dimuat!";
+                    isGameReady = true; // Game is ready to start rendering
+                    // Start the main game loop after data is loaded
+                    if (typeof window.gameInterval === 'undefined') {
+                        window.gameInterval = setInterval(gameLoop, 1000 / 60); // 60 FPS
+                    }
                 } else {
                     console.log("No saved game found, starting new game.");
-                    restartGame();
+                    restartGame(true); // Call restart with a flag to prevent saving right away
                     saveStatusDisplay.textContent = "Memulai game baru.";
+                    isGameReady = true;
+                    // Start the main game loop for a new game
+                    if (typeof window.gameInterval === 'undefined') {
+                        window.gameInterval = setInterval(gameLoop, 1000 / 60); // 60 FPS
+                    }
                 }
             }, (error) => {
                 console.error("Error loading document:", error);
-                saveStatusDisplay.textContent = "Gagal memuat progres.";
+                saveStatusDisplay.textContent = "Gagal memuat progres. Coba muat ulang halaman.";
             });
         }
         
         // --- End of Firebase and Data Logic ---
         
-        function restartGame() {
+        function restartGame(isNewGame = false) {
             money = 1000.00;
             population = 0;
             buildings = [];
@@ -447,7 +463,10 @@
             
             updateUI();
             updateAllButtons();
-            saveGame(); // Save the new game state immediately
+            
+            if (!isNewGame) { // Only save if the user manually restarted
+              saveGame(); 
+            }
         }
 
         /**
@@ -667,6 +686,8 @@
         setupButtonControls(rightButton, 'right');
         
         function checkPopulationChange() {
+            if (!isGameReady) return;
+
             const houseBuildings = buildings.filter(b => b.type === 'house');
             
             houseBuildings.forEach(house => {
@@ -714,6 +735,8 @@
         setInterval(checkPopulationChange, 5000); 
 
         function update() {
+            if (!isGameReady) return;
+            
             if (mode === 'move') {
                 let moveX = 0;
                 let moveY = 0;
@@ -769,6 +792,15 @@
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            if (!isGameReady) {
+                ctx.fillStyle = '#334155';
+                ctx.textAlign = 'center';
+                ctx.font = '24px Inter, sans-serif';
+                ctx.fillText(saveStatusDisplay.textContent, canvas.width / 2, canvas.height / 2);
+                requestAnimationFrame(draw);
+                return;
+            }
+
             drawGrid();
             drawBuildings();
             drawPlayer();
@@ -805,14 +837,16 @@
                 infoBox.classList.remove('opacity-100');
                 infoBox.classList.add('hidden');
             }
+
+            requestAnimationFrame(draw);
         }
 
         function gameLoop() {
             update();
             draw();
-            requestAnimationFrame(gameLoop);
         }
-        gameLoop();
+        
+        requestAnimationFrame(draw); // Start the draw loop immediately to show the loading screen
 
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('touchstart', (e) => {
@@ -825,6 +859,7 @@
         });
 
         function handleCanvasClick(e) {
+            if (!isGameReady) return;
             playActionSound('button');
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -901,7 +936,7 @@
         ];
         allButtons.forEach(button => {
             button.addEventListener('click', () => {
-                playActionSound('button');
+                if (isGameReady) playActionSound('button');
             });
         });
 
@@ -999,8 +1034,7 @@
         
         // Start the process
         initializeFirebaseAndGame();
-        updateUI();
-        updateAllButtons();
+        // The game loop (update function) is now called by a listener inside loadGame
     </script>
 </body>
 </html>
