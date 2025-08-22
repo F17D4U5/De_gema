@@ -202,15 +202,14 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
-    // Building data with new, higher values for income and maintenance
+    // Data bangunan dengan nilai pendapatan dan pengeluaran yang diperbarui
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
-        // Meningkatkan biaya perawatan taman dan jalan
-        // Serta meningkatkan pendapatan dasar toko dan industri agar lebih terlihat
-        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 25 },
+        // Biaya perawatan taman dan jalan yang telah disesuaikan
+        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
-        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 15 }
+        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 }
     };
     
     // DOM elements
@@ -331,14 +330,13 @@
         // Pembaruan uang (Logika pendapatan dan pengeluaran)
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
-            let totalExpenditure = 0; // Menginisialisasi variabel pengeluaran
+            let totalExpenditure = 0;
             
             buildings.forEach(b => {
                 if (b.type === 'house') {
                     // Pendapatan dari pajak populasi
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
-                    // INI ADALAH LOGIKA PENGGUNA: (Pendapatan Dasar) x (Profitabilitas) x (Pajak)
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
                 
@@ -348,7 +346,7 @@
                 }
             });
             money += totalIncome;
-            money -= totalExpenditure; // Mengurangi pengeluaran dari uang
+            money -= totalExpenditure;
             lastIncomeTime = Date.now();
             expenditureDisplay.textContent = formatRupiah(totalExpenditure);
         }
@@ -421,7 +419,6 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             }
-            // Menambahkan info biaya perawatan untuk taman dan jalan
             if (buildingFound.type === 'park' || buildingFound.type === 'road') {
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
             }
