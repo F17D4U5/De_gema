@@ -202,15 +202,15 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
-    // Building data
+    // Building data with new, higher values for income and maintenance
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
-        // Menambahkan biaya perawatan (maintenance) untuk taman dan jalan
-        // Juga meningkatkan pendapatan dasar untuk toko dan industri
-        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
-        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 100 },
-        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 150 },
-        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 5 }
+        // Meningkatkan biaya perawatan taman dan jalan
+        // Serta meningkatkan pendapatan dasar toko dan industri agar lebih terlihat
+        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 25 },
+        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
+        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 15 }
     };
     
     // DOM elements
@@ -338,13 +338,13 @@
                     // Pendapatan dari pajak populasi
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
-                    // INI ADALAH LOGIKA YANG DIMINTA PENGGUNA: (Pendapatan Dasar) x (Profitabilitas) x (Pajak)
+                    // INI ADALAH LOGIKA PENGGUNA: (Pendapatan Dasar) x (Profitabilitas) x (Pajak)
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
                 
                 // Menambahkan pengeluaran untuk perawatan jalan dan taman
                 if (b.maintenance) {
-                    totalExpenditure += b.maintenance;
+                    totalExpenditure += buildingStats[b.type].maintenance;
                 }
             });
             money += totalIncome;
@@ -421,6 +421,11 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             }
+            // Menambahkan info biaya perawatan untuk taman dan jalan
+            if (buildingFound.type === 'park' || buildingFound.type === 'road') {
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
+            }
+
             infoBoxEl.innerHTML = infoText;
             infoBoxEl.style.left = `${playerScreenX + player.width + 10}px`;
             infoBoxEl.style.top = `${playerScreenY}px`;
@@ -518,8 +523,7 @@
                 if (!existingBuilding && money >= cost) {
                     const newBuilding = {
                         id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
-                        population: stats.population || 0, needs: { happiness: 0, profitability: 0 },
-                        maintenance: stats.maintenance || 0 // Menambahkan biaya perawatan ke objek bangunan
+                        population: stats.population || 0, needs: { happiness: 0, profitability: 0 }
                     };
                     buildings.push(newBuilding);
                     money -= cost;
