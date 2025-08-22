@@ -225,9 +225,7 @@
         let taxRate = parseInt(taxRateSlider.value);
         const incomePerPersonPerSecond = 10;
         
-        // --- UPDATED INFLUENCE RADIUS VARIABLE ---
-        const influenceRadiusInBlocks = 7; // The new influence radius in blocks
-        // You can change this to 10 or any other number.
+        const influenceRadiusInBlocks = 7; 
 
         // Building costs and stats
         const buildingStats = {
@@ -251,20 +249,8 @@
         };
         
         // --- TONE.JS AUDIO SETUP ---
-        // Audio context must be started by user interaction
         let audioContextStarted = false;
-
-        // Create a single audio sampler to play different sounds
-        const soundPlayer = new Tone.Sampler({
-            urls: {
-                "C4": "https://cdn.jsdelivr.net/gh/Tonejs/Tone.js/examples/audio/casio/A1.mp3",
-            },
-            onload: () => {
-                // Sampler loaded
-            }
-        }).toDestination();
         
-        // Create simple synths for the different sound effects
         const buildSynth = new Tone.Synth({
             oscillator: { type: "square" },
             envelope: {
@@ -298,13 +284,11 @@
          * @param {string} type - The type of sound to play ('build', 'destroy', 'button').
          */
         function playActionSound(type) {
-            // Start the Tone.js context if it's not already started
             if (!audioContextStarted) {
                 Tone.start();
                 audioContextStarted = true;
             }
 
-            // Play the appropriate sound
             if (type === 'build') {
                 buildSynth.triggerAttackRelease("C5", "8n");
             } else if (type === 'destroy') {
@@ -314,9 +298,7 @@
             }
         }
         
-        // Function to reset all game variables to their initial state
         function restartGame() {
-            // Reset game variables
             money = 1000.00;
             population = 0;
             buildings = [];
@@ -328,7 +310,6 @@
             taxRateSlider.value = 5;
             taxRate = 5;
             
-            // Update UI
             updateUI();
             updateAllButtons();
         }
@@ -347,21 +328,18 @@
             }).format(amount);
         }
 
-        // Function to update the money and population display
         function updateUI() {
             moneyDisplay.textContent = formatRupiah(money);
             populationDisplay.textContent = population;
             taxRateDisplay.textContent = taxRate;
         }
 
-        // Function to draw the grid
         function drawGrid() {
             ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 1;
             const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
             const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
 
-            // Draw vertical lines
             for (let x = 0; x < screenGridSizeX; x++) {
                 const drawX = (x * gridSize) - (mapOffset.x % gridSize);
                 ctx.beginPath();
@@ -370,7 +348,6 @@
                 ctx.stroke();
             }
 
-            // Draw horizontal lines
             for (let y = 0; y < screenGridSizeY; y++) {
                 const drawY = (y * gridSize) - (mapOffset.y % gridSize);
                 ctx.beginPath();
@@ -380,20 +357,18 @@
             }
         }
 
-        // Function to draw buildings
         function drawBuildings() {
             buildings.forEach(building => {
                 const drawX = building.x - mapOffset.x;
                 const drawY = building.y - mapOffset.y;
 
                 if (drawX + gridSize < 0 || drawX > canvas.width || drawY + gridSize < 0 || drawY > canvas.height) {
-                    return; // Skip if off-screen
+                    return;
                 }
                 
                 ctx.fillStyle = building.color;
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 
-                // Add an outline, except for roads
                 if (building.type !== 'road') {
                     ctx.strokeStyle = '#334155';
                     ctx.strokeRect(drawX, drawY, gridSize, gridSize);
@@ -401,9 +376,7 @@
             });
         }
         
-        // Function to check if a tile is connected to a road
         function isConnectedToRoad(tileX, tileY) {
-            // Check 4 directions (up, down, left, right)
             const adjacentTiles = [
                 { x: tileX, y: tileY - 1 },
                 { x: tileX, y: tileY + 1 },
@@ -424,7 +397,6 @@
             return false;
         }
 
-        // Function to calculate citizen needs based on nearby buildings
         function calculateNeeds() {
             buildings.forEach(building => {
                 const tileX = Math.floor(building.x / gridSize);
@@ -437,16 +409,14 @@
                     return b.id !== building.id && distanceX <= gridSize * influenceRadiusInBlocks && distanceY <= gridSize * influenceRadiusInBlocks;
                 });
                 
-                // Logic for houses
                 if (building.type === 'house') {
                     const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
                     let happinessBonus = nearbyParks * 15;
                     
                     if (isConnected) {
-                        happinessBonus += 30; // Big bonus for road connection
+                        happinessBonus += 30;
                     }
 
-                    // Happiness reduction due to tax
                     let taxPenalty = 0;
                     if (taxRate > 10) {
                         taxPenalty = (taxRate - 10) * 2;
@@ -456,13 +426,12 @@
                     building.needs.happiness = Math.max(0, Math.min(100, Math.floor(happinessBonus + 50)));
                 }
                 
-                // Logic for stores
                 if (building.type === 'store') {
                     const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
                     let profitabilityBonus = nearbyHouses * 20;
 
                     if (isConnected) {
-                        profitabilityBonus += 40; // Big bonus for road connection
+                        profitabilityBonus += 40;
                     }
                     
                     if (population === 0) {
@@ -472,13 +441,12 @@
                     building.needs.profitability = Math.min(100, profitabilityBonus);
                 }
 
-                // Logic for industrial
                 if (building.type === 'industrial') {
                      const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
                     let profitabilityBonus = nearbyHouses * 20;
 
                     if (isConnected) {
-                        profitabilityBonus += 40; // Big bonus for road connection
+                        profitabilityBonus += 40;
                     }
 
                     if (population === 0) {
@@ -490,7 +458,6 @@
             });
         }
 
-        // Function to draw the player
         function drawPlayer() {
             const playerScreenX = player.x - mapOffset.x;
             const playerScreenY = player.y - mapOffset.y;
@@ -498,7 +465,6 @@
             ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
         }
 
-        // Variables to track movement control status
         let keys = {};
         let touchControls = {
             up: false,
@@ -507,7 +473,6 @@
             right: false
         };
 
-        // Function to handle keyboard input
         document.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             const key = e.key.toLowerCase();
@@ -537,34 +502,41 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Event listener for tax rate slider
         taxRateSlider.addEventListener('input', (e) => {
             taxRate = parseInt(e.target.value);
             taxRateDisplay.textContent = taxRate;
-            calculateNeeds(); // Update happiness in real-time as tax changes
+            calculateNeeds();
         });
 
-        // Handle touch events on movement buttons
-        function setupTouchControls() {
-            const controls = {
-                up: upButton, down: downButton, left: leftButton, right: rightButton
+        // --- Perbaikan Bug: Penanganan kontrol sentuh dan mouse yang lebih andal ---
+        // Penjelasan: Peristiwa 'touchstart' kadang tidak stabil di beberapa browser.
+        // Dengan menggabungkan 'touchstart'/'touchend' dan 'mousedown'/'mouseup'
+        // kita memastikan kontrol bekerja secara konsisten di semua perangkat, baik sentuh maupun mouse.
+        function setupButtonControls(button, direction) {
+            // Aksi saat tombol ditekan (baik sentuhan atau klik mouse)
+            const startAction = (e) => {
+                e.preventDefault();
+                touchControls[direction] = true;
             };
 
-            for (const direction in controls) {
-                const button = controls[direction];
-                button.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    touchControls[direction] = true;
-                }, { passive: false });
-                button.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    touchControls[direction] = false;
-                });
-            }
+            // Aksi saat tombol dilepas
+            const endAction = (e) => {
+                e.preventDefault();
+                touchControls[direction] = false;
+            };
+
+            // Menggunakan `mousedown` dan `mouseup` untuk mouse dan `touchstart` & `touchend` untuk sentuh.
+            button.addEventListener('mousedown', startAction);
+            button.addEventListener('mouseup', endAction);
+            button.addEventListener('touchstart', startAction, { passive: false });
+            button.addEventListener('touchend', endAction, { passive: false });
         }
-        setupTouchControls();
         
-        // --- FINALIZED POPULATION LOGIC BASED ON USER RULES ---
+        setupButtonControls(upButton, 'up');
+        setupButtonControls(downButton, 'down');
+        setupButtonControls(leftButton, 'left');
+        setupButtonControls(rightButton, 'right');
+        
         function checkPopulationChange() {
             const houseBuildings = buildings.filter(b => b.type === 'house');
             
@@ -572,15 +544,12 @@
                 let changeAmount = 0;
                 let logMessage = '';
 
-                // Logic based on tax zone
                 if (taxRate <= 20) {
-                    // 0-20% zone: Population definitely increases
-                    changeAmount = Math.floor(Math.random() * 2) + 1; // Increases by 1 or 2
+                    changeAmount = Math.floor(Math.random() * 2) + 1;
                     logMessage = `population increases due to low taxes`;
                 } else if (taxRate <= 45) {
-                    // 21-45% zone: Gray area
-                    const increaseChance = (45 - taxRate) / 25; // Chance decreases from 100% (tax 20) to 0% (tax 45)
-                    const decreaseChance = (taxRate - 20) / 25; // Chance increases from 0% (tax 20) to 100% (tax 45)
+                    const increaseChance = (45 - taxRate) / 25;
+                    const decreaseChance = (taxRate - 20) / 25;
                     
                     if (Math.random() < increaseChance) {
                         changeAmount += Math.floor(Math.random() * 2) + 1;
@@ -592,19 +561,16 @@
                         logMessage = `lost ${Math.abs(changeAmount)} residents`;
                     }
                 } else {
-                    // 46-50% zone: Population definitely decreases
-                    changeAmount = -(Math.floor(Math.random() * 2) + 1); // Decreases by 1 or 2
+                    changeAmount = -(Math.floor(Math.random() * 2) + 1);
                     logMessage = `population decreases due to very high taxes`;
                 }
                 
                 const oldPopulation = house.population;
                 let newPopulation = oldPopulation + changeAmount;
                 
-                // Specific rule: House becomes empty only if tax > 40%
                 if (taxRate > 40 && newPopulation < 0) {
                     newPopulation = 0;
                 } else if (newPopulation < 1) {
-                    // If tax <= 40%, population should not be 0
                     newPopulation = 1;
                 }
 
@@ -616,24 +582,17 @@
             });
         }
 
-        // Set interval to check for population changes
         setInterval(checkPopulationChange, 5000); 
 
-        // Function to update player, map, and game data
         function update() {
             if (mode === 'move') {
                 let moveX = 0;
                 let moveY = 0;
-                // Keyboard movement
-                if (keys['arrowup'] || keys['w']) moveY -= player.speed;
-                if (keys['arrowdown'] || keys['s']) moveY += player.speed;
-                if (keys['arrowleft'] || keys['a']) moveX -= player.speed;
-                if (keys['arrowright'] || keys['d']) moveX += player.speed;
-                // Touch button movement
-                if (touchControls.up) moveY -= player.speed;
-                if (touchControls.down) moveY += player.speed;
-                if (touchControls.left) moveX -= player.speed;
-                if (touchControls.right) moveX += player.speed;
+
+                if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
+                if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
+                if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+                if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
 
                 const playerScreenX = player.x - mapOffset.x;
                 const playerScreenY = player.y - mapOffset.y;
@@ -652,7 +611,6 @@
                 player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
             }
 
-            // Recalculate total population
             population = 0;
             buildings.forEach(b => {
                 if (b.type === 'house') {
@@ -664,10 +622,8 @@
             if (now - lastIncomeTime > incomeInterval) {
                 let totalIncome = 0;
                 
-                // INCOME FROM TAXES
                 totalIncome += population * incomePerPersonPerSecond * (taxRate / 100);
 
-                // INCOME FROM STORE AND INDUSTRIAL PROFIT
                 buildings.forEach(b => {
                     if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
                         totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
@@ -680,7 +636,6 @@
             }
         }
 
-        // Function to redraw all game elements
         function draw() {
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -706,7 +661,6 @@
                 if (buildingFound.type === 'house') {
                     infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
                     infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
-                    // Add per-house income info
                     const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                     infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
                 } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
@@ -724,7 +678,6 @@
             }
         }
 
-        // Main game loop
         function gameLoop() {
             update();
             draw();
@@ -732,7 +685,6 @@
         }
         gameLoop();
 
-        // Handle mouse and touch clicks for 'build' and 'destroy' modes
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
@@ -744,7 +696,7 @@
         });
 
         function handleCanvasClick(e) {
-            playActionSound('button'); // Play button sound on any canvas click
+            playActionSound('button');
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -779,7 +731,7 @@
                     buildings.push(newBuilding);
                     calculateNeeds();
                     updateUI();
-                    playActionSound('build'); // Play build sound on successful build
+                    playActionSound('build');
                 } else if (existingBuilding) {
                     infoBox.innerHTML = `<p class="text-red-500">Sudah ada bangunan di sini!</p>`;
                     infoBox.classList.remove('hidden');
@@ -801,12 +753,11 @@
                     money += buildingStats[destroyedBuilding.type].cost * 0.5;
                     calculateNeeds();
                     updateUI();
-                    playActionSound('destroy'); // Play destroy sound on successful destruction
+                    playActionSound('destroy');
                 }
             }
         }
 
-        // Handle UI buttons
         const moveButton = document.getElementById('moveButton');
         const houseButton = document.getElementById('houseButton');
         const parkButton = document.getElementById('parkButton');
@@ -815,7 +766,6 @@
         const roadButton = document.getElementById('roadButton');
         const destroyButton = document.getElementById('destroyButton');
         
-        // Add button click sound for UI buttons
         const allButtons = [
             moveButton, houseButton, parkButton, storeButton, industrialButton, 
             roadButton, destroyButton, guideButton, closeModalButton, restartButton
@@ -826,7 +776,6 @@
             });
         });
 
-        // Function to update the appearance of all buttons
         function updateAllButtons() {
             const modeButtons = [
                 { id: moveButton, mode: 'move', type: 'move' },
@@ -868,7 +817,6 @@
             }
         }
 
-        // Event listeners for buttons
         moveButton.addEventListener('click', () => {
             mode = 'move';
             updateAllButtons();
@@ -904,22 +852,17 @@
             updateAllButtons();
         });
 
-        // Add listener for the "Restart" button
         restartButton.addEventListener('click', restartGame);
         
-        // --- MODAL GUIDE LOGIC FINALIZED ---
-        // Show modal
         guideButton.addEventListener('click', () => {
             guideModal.classList.remove('hidden');
         });
         
-        // Handle closing the modal from one place (button or outside click)
         function closeGuideModal() {
             guideModal.classList.add('hidden');
         }
 
         guideModal.addEventListener('click', (event) => {
-            // Check if the clicked target is the modal itself or the close button
             if (event.target === guideModal || event.target === closeModalButton) {
                 closeGuideModal();
             }
