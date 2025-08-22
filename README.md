@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Pembangunan Kota</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -174,7 +175,6 @@
                 <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
                 <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko dan Industri akan memberikan keuntungan.</li>
                 <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
-                <!-- NEW LIST ITEM FOR RESTART BUTTON -->
                 <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
             </ul>
         </div>
@@ -249,6 +249,70 @@
             speed: 5,
             color: '#ef4444' // Red
         };
+        
+        // --- TONE.JS AUDIO SETUP ---
+        // Audio context must be started by user interaction
+        let audioContextStarted = false;
+
+        // Create a single audio sampler to play different sounds
+        const soundPlayer = new Tone.Sampler({
+            urls: {
+                "C4": "https://cdn.jsdelivr.net/gh/Tonejs/Tone.js/examples/audio/casio/A1.mp3",
+            },
+            onload: () => {
+                // Sampler loaded
+            }
+        }).toDestination();
+        
+        // Create simple synths for the different sound effects
+        const buildSynth = new Tone.Synth({
+            oscillator: { type: "square" },
+            envelope: {
+                attack: 0.01,
+                decay: 0.2,
+                sustain: 0,
+                release: 0.1
+            }
+        }).toDestination();
+
+        const destroySynth = new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 10,
+            envelope: {
+                attack: 0.001,
+                decay: 0.4,
+                sustain: 0.01,
+                release: 0.04,
+                attackCurve: "exponential"
+            }
+        }).toDestination();
+
+        const buttonSynth = new Tone.PluckSynth({
+            attackNoise: 1,
+            dampening: 4000,
+            release: 0.2
+        }).toDestination();
+
+        /**
+         * Plays a sound effect based on a keyword.
+         * @param {string} type - The type of sound to play ('build', 'destroy', 'button').
+         */
+        function playActionSound(type) {
+            // Start the Tone.js context if it's not already started
+            if (!audioContextStarted) {
+                Tone.start();
+                audioContextStarted = true;
+            }
+
+            // Play the appropriate sound
+            if (type === 'build') {
+                buildSynth.triggerAttackRelease("C5", "8n");
+            } else if (type === 'destroy') {
+                destroySynth.triggerAttackRelease("C1", "16n");
+            } else if (type === 'button') {
+                buttonSynth.triggerAttackRelease("G4", "8n");
+            }
+        }
         
         // Function to reset all game variables to their initial state
         function restartGame() {
@@ -680,6 +744,7 @@
         });
 
         function handleCanvasClick(e) {
+            playActionSound('button'); // Play button sound on any canvas click
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -714,6 +779,7 @@
                     buildings.push(newBuilding);
                     calculateNeeds();
                     updateUI();
+                    playActionSound('build'); // Play build sound on successful build
                 } else if (existingBuilding) {
                     infoBox.innerHTML = `<p class="text-red-500">Sudah ada bangunan di sini!</p>`;
                     infoBox.classList.remove('hidden');
@@ -735,6 +801,7 @@
                     money += buildingStats[destroyedBuilding.type].cost * 0.5;
                     calculateNeeds();
                     updateUI();
+                    playActionSound('destroy'); // Play destroy sound on successful destruction
                 }
             }
         }
@@ -747,10 +814,21 @@
         const industrialButton = document.getElementById('industrialButton');
         const roadButton = document.getElementById('roadButton');
         const destroyButton = document.getElementById('destroyButton');
+        
+        // Add button click sound for UI buttons
+        const allButtons = [
+            moveButton, houseButton, parkButton, storeButton, industrialButton, 
+            roadButton, destroyButton, guideButton, closeModalButton, restartButton
+        ];
+        allButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                playActionSound('button');
+            });
+        });
 
         // Function to update the appearance of all buttons
         function updateAllButtons() {
-            const allButtons = [
+            const modeButtons = [
                 { id: moveButton, mode: 'move', type: 'move' },
                 { id: houseButton, mode: 'build', type: 'house' },
                 { id: parkButton, mode: 'build', type: 'park' },
@@ -760,7 +838,7 @@
                 { id: destroyButton, mode: 'destroy', type: 'destroy' }
             ];
             
-            allButtons.forEach(btn => {
+            modeButtons.forEach(btn => {
                 btn.id.classList.remove('mode-active');
                 if (btn.type === 'move') {
                     btn.id.style.backgroundColor = moveButtonColor;
