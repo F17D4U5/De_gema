@@ -44,6 +44,17 @@
         .control-button:active {
             transform: scale(0.95);
         }
+        .action-button {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            color: white;
+            font-weight: bold;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition-property: background-color, transform, box-shadow;
+            transition-duration: 0.15s;
+            transition-timing-function: ease-in-out;
+        }
         .modal {
             position: fixed;
             z-index: 100;
@@ -132,15 +143,16 @@
         <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
     </div>
 
-    <div class="mt-4 flex flex-wrap gap-2 justify-center" id="buttonContainer">
-        <button id="moveModeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #3b82f6;">Mode Pindah</button>
-        <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #fde047;">Bangun Rumah</button>
-        <button id="parkButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #22c55e;">Bangun Taman</button>
-        <button id="storeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #f59e0b;">Bangun Toko</button>
-        <button id="industrialButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #1f2937;">Bangun Industri</button>
-        <button id="roadButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #64748b;">Bangun Jalan</button>
-        <button id="destroyModeButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors" style="background-color: #ef4444;">Hancurkan</button>
-        <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
+    <!-- Container tombol sekarang menggunakan CSS Grid untuk lebar yang sama -->
+    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-full" id="buttonContainer">
+        <button id="moveModeButton" class="action-button" style="background-color: #3b82f6;">Mode Pindah</button>
+        <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
+        <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
+        <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
+        <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
+        <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
+        <button id="destroyModeButton" class="action-button" style="background-color: #ef4444;">Hancurkan</button>
+        <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan Permainan</button>
     </div>
     
     <div class="mt-4 flex justify-center">
