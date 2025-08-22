@@ -204,8 +204,9 @@
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e' },
-        store: { cost: 200, name: 'Toko', color: '#f59e0b' },
-        industrial: { cost: 300, name: 'Industri', color: '#1f2937' },
+        // Menambahkan properti baseIncome untuk toko dan industri sebagai dasar perhitungan pajak.
+        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 10 },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 15 },
         road: { cost: 20, name: 'Jalan', color: '#64748b' }
     };
     
@@ -324,12 +325,17 @@
             player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        // Pembaruan uang
+        // Pembaruan uang (Logika pendapatan baru)
         if (Date.now() - lastIncomeTime > incomeInterval) {
-            let totalIncome = population * incomePerPersonPerSecond * (taxRate / 100);
+            let totalIncome = 0;
             buildings.forEach(b => {
-                if (population > 0 && (b.type === 'store' || b.type === 'industrial')) {
-                    totalIncome += buildingStats[b.type].cost * (b.needs.profitability / 100);
+                if (b.type === 'house') {
+                    // Pendapatan dari pajak populasi
+                    totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
+                } else if (b.type === 'store' || b.type === 'industrial') {
+                    // Pendapatan dari pajak bisnis
+                    // Dihitung berdasarkan baseIncome bangunan dikali tingkat pajak.
+                    totalIncome += buildingStats[b.type].baseIncome * (taxRate / 100);
                 }
             });
             money += totalIncome;
@@ -400,7 +406,7 @@
                 const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                 infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
-                const profitPerBuilding = buildingStats[buildingFound.type].cost * (buildingFound.needs.profitability / 100);
+                const profitPerBuilding = buildingStats[buildingFound.type].baseIncome * (taxRate / 100);
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             }
