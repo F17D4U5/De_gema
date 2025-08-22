@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Pembangunan Kota</title>
+    <title>Game Pembangunan Kota (No Save)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
@@ -105,7 +105,7 @@
 </head>
 <body class="bg-gray-100 p-4 flex flex-col items-center justify-center">
     
-    <!-- Kontainer utama yang memusatkan semua konten -->
+    <!-- Main container that centers all content -->
     <div class="flex flex-col items-center w-full max-w-4xl">
         <div class="text-center mb-4">
             <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
@@ -122,13 +122,12 @@
             <div>Populasi: <span id="populationDisplay">0</span></div>
         </div>
 
-        <!-- Tampilan untuk User ID dan status penyimpanan -->
+        <!-- Tampilan untuk User ID dan status penyimpanan (Hidden as no save functionality) -->
         <div class="w-full text-center text-sm text-gray-500 mb-2">
-            <p>ID Pengguna: <span id="userIdDisplay">Memuat...</span></p>
-            <p id="saveStatus">Memuat progres...</p>
+            <p id="saveStatus">Mode tanpa penyimpanan aktif.</p>
         </div>
 
-        <!-- Kontrol Gerak (Dibuat agar selalu terlihat di HP, tapi disembunyikan di desktop) -->
+        <!-- Touch Controls (Visible on mobile, hidden on desktop) -->
         <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
             <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
                 <div></div>
@@ -148,7 +147,7 @@
             <input type="range" id="taxRateSlider" min="0" max="50" value="0" class="w-full mt-1 accent-blue-500">
         </div>
 
-        <!-- Container tombol bangunan -->
+        <!-- Building button container -->
         <div class="mt-4 flex flex-wrap gap-2 justify-center">
             <button id="moveButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md hover:bg-blue-600 transition-colors">Mode Pindah</button>
             <button id="houseButton" class="px-4 py-2 text-white font-bold rounded-lg shadow-md transition-colors">Bangun Rumah</button>
@@ -160,13 +159,13 @@
             <button id="guideButton" class="px-4 py-2 bg-gray-400 text-white font-bold rounded-lg shadow-md hover:bg-gray-500 transition-colors">Panduan Permainan</button>
         </div>
 
-        <!-- Container tombol "Mulai Ulang" yang baru dan terpisah -->
+        <!-- Separate "Restart" button container -->
         <div class="mt-4 flex justify-center">
             <button id="restartButton" class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
         </div>
     </div>
 
-    <!-- Modal Panduan -->
+    <!-- Guide Modal -->
     <div id="guideModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -186,12 +185,7 @@
         </div>
     </div>
 
-    <script type="module">
-        // Import Firebase modules
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+    <script>
         // Get canvas and 2D context
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -200,8 +194,6 @@
         const populationDisplay = document.getElementById('populationDisplay');
         const taxRateSlider = document.getElementById('taxRateSlider');
         const taxRateDisplay = document.getElementById('taxRateDisplay');
-        const userIdDisplay = document.getElementById('userIdDisplay');
-        const saveStatusDisplay = document.getElementById('saveStatus');
 
         // Get new movement control buttons
         const upButton = document.getElementById('upButton');
@@ -229,14 +221,14 @@
         let buildings = []; 
         let mode = 'move'; 
         let buildingType = 'house';
-        let isGameReady = false;
+        let isGameReady = true; // Game is always ready as there's no loading
 
         // Currency and population system
-        let money = 0;
+        let money = 1000.00;
         let population = 0;
         let lastIncomeTime = Date.now();
         const incomeInterval = 1000;
-        let taxRate = 0;
+        let taxRate = 5;
         const incomePerPersonPerSecond = 10;
         
         const influenceRadiusInBlocks = 7; 
@@ -312,144 +304,7 @@
             }
         }
         
-        // --- FIREBASE SETUP AND DATA SAVING/LOADING ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        let db, auth, userId;
-        
-        /**
-         * Main function to initialize Firebase and start the game.
-         */
-        async function initializeFirebaseAndGame() {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Set the status message to be more descriptive
-                saveStatusDisplay.textContent = "Menghubungkan ke Firebase...";
-                
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                userId = auth.currentUser?.uid;
-                if (!userId) {
-                    throw new Error("User ID not available after authentication.");
-                }
-                userIdDisplay.textContent = userId;
-                
-                // Now that we have a user ID, we can start loading and saving data
-                saveStatusDisplay.textContent = "Memuat progres dari Firestore...";
-                loadGame();
-                
-                // Start a timer for automatic saving
-                setInterval(saveGame, 5000); // Auto-save every 5 seconds
-
-            } catch (error) {
-                console.error("Firebase initialization or auth error: ", error);
-                saveStatusDisplay.textContent = "Gagal memuat. Periksa koneksi atau coba lagi.";
-            }
-        }
-        
-        /**
-         * Saves the current game state to Firestore.
-         */
-        async function saveGame() {
-            if (!isGameReady || !userId) return;
-            saveStatusDisplay.textContent = "Menyimpan...";
-            try {
-                // Prepare game state for saving
-                const gameState = {
-                    money: money,
-                    population: population,
-                    mapOffset: mapOffset,
-                    playerX: player.x,
-                    playerY: player.y,
-                    taxRate: taxRate,
-                    // Convert the buildings array to a JSON string because Firestore doesn't handle nested arrays well
-                    buildings: JSON.stringify(buildings),
-                    lastSaved: new Date()
-                };
-
-                const docRef = doc(db, `/artifacts/${appId}/public/data/game-state`, userId);
-                await setDoc(docRef, gameState);
-                
-                saveStatusDisplay.textContent = "Tersimpan!";
-            } catch (e) {
-                console.error("Error saving document: ", e);
-                saveStatusDisplay.textContent = "Penyimpanan gagal!";
-            } finally {
-                // Clear the status after a short delay
-                setTimeout(() => {
-                    saveStatusDisplay.textContent = "";
-                }, 2000);
-            }
-        }
-        
-        /**
-         * Loads the game state from Firestore using a real-time listener.
-         */
-        function loadGame() {
-            if (!userId) {
-                saveStatusDisplay.textContent = "ID pengguna tidak ditemukan. Memulai game baru.";
-                restartGame(true);
-                return;
-            }
-            const docRef = doc(db, `/artifacts/${appId}/public/data/game-state`, userId);
-
-            // Use onSnapshot for a real-time listener
-            onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    
-                    // Update game state with loaded data
-                    money = data.money;
-                    population = data.population;
-                    mapOffset = data.mapOffset;
-                    player.x = data.playerX;
-                    player.y = data.playerY;
-                    taxRate = data.taxRate;
-                    
-                    try {
-                         buildings = JSON.parse(data.buildings) || [];
-                    } catch(e) {
-                         console.error("Failed to parse buildings data:", e);
-                         buildings = [];
-                    }
-                    
-                    taxRateSlider.value = taxRate;
-                    updateUI();
-                    console.log("Game data loaded successfully.");
-                    saveStatusDisplay.textContent = "Progres dimuat!";
-                    isGameReady = true; // Game is ready to start rendering
-                    // Start the main game loop after data is loaded
-                    if (typeof window.gameInterval === 'undefined') {
-                        window.gameInterval = setInterval(gameLoop, 1000 / 60); // 60 FPS
-                    }
-                } else {
-                    console.log("No saved game found, starting new game.");
-                    restartGame(true); // Call restart with a flag to prevent saving right away
-                    saveStatusDisplay.textContent = "Memulai game baru.";
-                    isGameReady = true;
-                    // Start the main game loop for a new game
-                    if (typeof window.gameInterval === 'undefined') {
-                        window.gameInterval = setInterval(gameLoop, 1000 / 60); // 60 FPS
-                    }
-                }
-            }, (error) => {
-                console.error("Error loading document:", error);
-                saveStatusDisplay.textContent = "Gagal memuat progres. Coba muat ulang halaman.";
-            });
-        }
-        
-        // --- End of Firebase and Data Logic ---
-        
-        function restartGame(isNewGame = false) {
+        function restartGame() {
             money = 1000.00;
             population = 0;
             buildings = [];
@@ -463,10 +318,6 @@
             
             updateUI();
             updateAllButtons();
-            
-            if (!isNewGame) { // Only save if the user manually restarted
-              saveGame(); 
-            }
         }
 
         /**
@@ -792,15 +643,6 @@
             ctx.fillStyle = '#f8fafc';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (!isGameReady) {
-                ctx.fillStyle = '#334155';
-                ctx.textAlign = 'center';
-                ctx.font = '24px Inter, sans-serif';
-                ctx.fillText(saveStatusDisplay.textContent, canvas.width / 2, canvas.height / 2);
-                requestAnimationFrame(draw);
-                return;
-            }
-
             drawGrid();
             drawBuildings();
             drawPlayer();
@@ -846,8 +688,6 @@
             draw();
         }
         
-        requestAnimationFrame(draw); // Start the draw loop immediately to show the loading screen
-
         canvas.addEventListener('click', handleCanvasClick);
         canvas.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
@@ -859,7 +699,6 @@
         });
 
         function handleCanvasClick(e) {
-            if (!isGameReady) return;
             playActionSound('button');
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -936,7 +775,7 @@
         ];
         allButtons.forEach(button => {
             button.addEventListener('click', () => {
-                if (isGameReady) playActionSound('button');
+                playActionSound('button');
             });
         });
 
@@ -1032,9 +871,9 @@
             }
         });
         
-        // Start the process
-        initializeFirebaseAndGame();
-        // The game loop (update function) is now called by a listener inside loadGame
+        // Initial setup and start game loop
+        restartGame();
+        gameLoop();
     </script>
 </body>
 </html>
