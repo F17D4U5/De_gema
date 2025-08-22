@@ -293,8 +293,9 @@
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
             if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
             if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+            // Memperbaiki kesalahan: Mengganti variabel touchX yang tidak terdefinisi dengan touchControls.right
             if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
-
+            
             const playerScreenX = player.x - mapOffset.x;
             const playerScreenY = player.y - mapOffset.y;
             const edgeBuffer = 200;
@@ -387,7 +388,9 @@
                 const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                 infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
+                const profitPerBuilding = buildingStats[buildingFound.type].cost * (buildingFound.needs.profitability / 100);
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
+                infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             }
             infoBoxEl.innerHTML = infoText;
             infoBoxEl.style.left = `${playerScreenX + player.width + 10}px`;
