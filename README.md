@@ -343,7 +343,7 @@
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
             if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
             if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-            // Perbaikan: Mengganti 'touchX < 0' yang tidak terdefinisi dengan touchControls.right
+            // Perbaikan: Menghapus referensi yang tidak terdefinisi (touchX) dan memastikan logika pergerakan benar
             if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
             
             const playerScreenX = player.x - mapOffset.x;
