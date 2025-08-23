@@ -136,40 +136,35 @@
             opacity: 1;
         }
         
-        /* Styles for mobile controls in different orientations */
-        #mobile-landscape-controls {
-            position: absolute;
-            bottom: 1rem;
-            right: 1rem;
-            width: 150px;
-            height: 150px;
-            z-index: 20;
-            display: none; /* Hidden by default */
-        }
-        #mobile-portrait-controls {
-            display: none; /* Hidden by default */
+        /* New styling for dynamic mobile controls */
+        #mobile-controls {
+            display: none;
         }
 
-        /* Show floating controls on smaller screens in landscape orientation */
+        /* Show and style controls based on orientation */
         @media (max-width: 768px) and (orientation: landscape) {
-            #mobile-landscape-controls {
+            #mobile-controls {
+                position: absolute;
+                bottom: 1rem;
+                right: 1rem;
+                width: 150px;
+                height: 150px;
+                z-index: 20;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(3, 1fr);
                 gap: 0.5rem;
             }
-            #mobile-portrait-controls {
-                display: none;
-            }
         }
         
-        /* Show non-floating controls on smaller screens in portrait orientation */
         @media (max-width: 768px) and (orientation: portrait) {
-            #mobile-portrait-controls {
+            #mobile-controls {
                 display: flex;
-            }
-            #mobile-landscape-controls {
-                display: none;
+                flex-direction: row;
+                justify-content: center;
+                gap: 4px; /* Reduced gap for a tighter layout */
+                margin-top: 1rem;
+                width: 100%;
             }
         }
     </style>
@@ -187,16 +182,16 @@
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
         
-        <!-- Floating Mobile Controls Overlay for Landscape Mode -->
-        <div id="mobile-landscape-controls">
+        <!-- Single set of mobile controls to be dynamically styled -->
+        <div id="mobile-controls">
             <div></div>
-            <button id="upButton" class="control-button text-2xl">▲</button>
+            <button id="up-btn" class="control-button text-2xl">▲</button>
             <div></div>
-            <button id="leftButton" class="control-button text-2xl">◀</button>
+            <button id="left-btn" class="control-button text-2xl">◀</button>
             <div></div>
-            <button id="rightButton" class="control-button text-2xl">►</button>
+            <button id="right-btn" class="control-button text-2xl">►</button>
             <div></div>
-            <button id="downButton" class="control-button text-2xl">▼</button>
+            <button id="down-btn" class="control-button text-2xl">▼</button>
             <div></div>
         </div>
     </div>
@@ -235,13 +230,6 @@
             </button>
             <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
             <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
-        </div>
-        <!-- Non-floating mobile controls for Portrait Mode -->
-        <div id="mobile-portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
-            <button id="leftButton" class="control-button text-2xl">◀</button>
-            <button id="upButton" class="control-button text-2xl">▲</button>
-            <button id="downButton" class="control-button text-2xl">▼</button>
-            <button id="rightButton" class="control-button text-2xl">►</button>
         </div>
     </div>
 </div>
@@ -324,12 +312,12 @@
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Mobile controls
-    const upButton = document.getElementById('upButton');
-    const downButton = document.getElementById('downButton');
-    const leftButton = document.getElementById('leftButton');
-    const rightButton = document.getElementById('rightButton');
-
+    // Mobile controls with unique IDs
+    const mobileUpButton = document.getElementById('up-btn');
+    const mobileDownButton = document.getElementById('down-btn');
+    const mobileLeftButton = document.getElementById('left-btn');
+    const mobileRightButton = document.getElementById('right-btn');
+    
     // Helper Functions
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
@@ -596,23 +584,25 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        const mobileControlButtons = [upButton, downButton, leftButton, rightButton];
+        const mobileButtons = [
+            mobileUpButton, mobileDownButton, mobileLeftButton, mobileRightButton
+        ];
 
-        mobileControlButtons.forEach(btn => {
+        mobileButtons.forEach(btn => {
             if (btn) {
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     switch (btn.id) {
-                        case 'upButton':
+                        case 'up-btn':
                             touchControls.up = true;
                             break;
-                        case 'downButton':
+                        case 'down-btn':
                             touchControls.down = true;
                             break;
-                        case 'leftButton':
+                        case 'left-btn':
                             touchControls.left = true;
                             break;
-                        case 'rightButton':
+                        case 'right-btn':
                             touchControls.right = true;
                             break;
                     }
