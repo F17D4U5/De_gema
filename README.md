@@ -137,19 +137,23 @@
         }
         
         /* New styling for dynamic mobile controls */
-        #mobile-controls {
+        #mobile-landscape-controls {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 150px;
+            height: 150px;
+            z-index: 20;
             display: none;
         }
 
+        #mobile-portrait-controls {
+            display: none;
+        }
+        
         /* Show and style controls based on orientation */
         @media (max-width: 768px) and (orientation: landscape) {
-            #mobile-controls {
-                position: absolute;
-                bottom: 1rem;
-                right: 1rem;
-                width: 150px;
-                height: 150px;
-                z-index: 20;
+            #mobile-landscape-controls {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(3, 1fr);
@@ -158,11 +162,11 @@
         }
         
         @media (max-width: 768px) and (orientation: portrait) {
-            #mobile-controls {
+            #mobile-portrait-controls {
                 display: flex;
                 flex-direction: row;
                 justify-content: center;
-                gap: 4px; /* Reduced gap for a tighter layout */
+                gap: 4px;
                 margin-top: 1rem;
                 width: 100%;
             }
@@ -182,16 +186,16 @@
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
         
-        <!-- Single set of mobile controls to be dynamically styled -->
-        <div id="mobile-controls">
+        <!-- Floating Mobile Controls for Landscape Mode -->
+        <div id="mobile-landscape-controls">
             <div></div>
-            <button id="up-btn" class="control-button text-2xl">▲</button>
+            <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
             <div></div>
-            <button id="left-btn" class="control-button text-2xl">◀</button>
+            <button id="landscape-left-btn" class="control-button text-2xl">◀</button>
             <div></div>
-            <button id="right-btn" class="control-button text-2xl">►</button>
+            <button id="landscape-right-btn" class="control-button text-2xl">►</button>
             <div></div>
-            <button id="down-btn" class="control-button text-2xl">▼</button>
+            <button id="landscape-down-btn" class="control-button text-2xl">▼</button>
             <div></div>
         </div>
     </div>
@@ -230,6 +234,13 @@
             </button>
             <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
             <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
+        </div>
+        <!-- Non-floating mobile controls for Portrait Mode -->
+        <div id="mobile-portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
+            <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
+            <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
+            <button id="portrait-left-btn" class="control-button text-2xl">◀</button>
+            <button id="portrait-right-btn" class="control-button text-2xl">►</button>
         </div>
     </div>
 </div>
@@ -312,11 +323,16 @@
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Mobile controls with unique IDs
-    const mobileUpButton = document.getElementById('up-btn');
-    const mobileDownButton = document.getElementById('down-btn');
-    const mobileLeftButton = document.getElementById('left-btn');
-    const mobileRightButton = document.getElementById('right-btn');
+    // Mobile controls - now with unique IDs
+    const landscapeUpButton = document.getElementById('landscape-up-btn');
+    const landscapeDownButton = document.getElementById('landscape-down-btn');
+    const landscapeLeftButton = document.getElementById('landscape-left-btn');
+    const landscapeRightButton = document.getElementById('landscape-right-btn');
+
+    const portraitUpButton = document.getElementById('portrait-up-btn');
+    const portraitDownButton = document.getElementById('portrait-down-btn');
+    const portraitLeftButton = document.getElementById('portrait-left-btn');
+    const portraitRightButton = document.getElementById('portrait-right-btn');
     
     // Helper Functions
     function formatRupiah(amount) {
@@ -584,25 +600,36 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        const mobileButtons = [
-            mobileUpButton, mobileDownButton, mobileLeftButton, mobileRightButton
+        const allMobileButtons = [
+            document.getElementById('landscape-up-btn'),
+            document.getElementById('landscape-down-btn'),
+            document.getElementById('landscape-left-btn'),
+            document.getElementById('landscape-right-btn'),
+            document.getElementById('portrait-up-btn'),
+            document.getElementById('portrait-down-btn'),
+            document.getElementById('portrait-left-btn'),
+            document.getElementById('portrait-right-btn')
         ];
 
-        mobileButtons.forEach(btn => {
+        allMobileButtons.forEach(btn => {
             if (btn) {
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     switch (btn.id) {
-                        case 'up-btn':
+                        case 'landscape-up-btn':
+                        case 'portrait-up-btn':
                             touchControls.up = true;
                             break;
-                        case 'down-btn':
+                        case 'landscape-down-btn':
+                        case 'portrait-down-btn':
                             touchControls.down = true;
                             break;
-                        case 'left-btn':
+                        case 'landscape-left-btn':
+                        case 'portrait-left-btn':
                             touchControls.left = true;
                             break;
-                        case 'right-btn':
+                        case 'landscape-right-btn':
+                        case 'portrait-right-btn':
                             touchControls.right = true;
                             break;
                     }
