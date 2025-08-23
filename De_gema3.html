@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulasi Kota 2D Sederhana (HTML Murni)</title>
+    <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -15,11 +15,15 @@
             align-items: center;
             min-height: 100vh;
             padding: 1rem;
+            overflow: hidden; /* Prevent body scrolling */
         }
         canvas {
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            touch-action: none; /* Mencegah scrolling saat menyentuh kanvas */
+            touch-action: none; /* Prevents scrolling when touching the canvas */
+            width: 100%;
+            height: auto;
+            max-width: 800px;
         }
         .mode-active {
             box-shadow: 0 0 0 4px #60a5fa;
@@ -36,7 +40,7 @@
             z-index: 10;
         }
         .control-button {
-            background-color: rgba(209, 213, 219, 0.7); /* Latar belakang semi-transparan */
+            background-color: rgba(209, 213, 219, 0.7); /* Semi-transparent background */
             color: #4b5563;
             border-radius: 0.5rem;
             display: flex;
@@ -45,7 +49,7 @@
             font-weight: bold;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.1s ease-in-out;
-            backdrop-filter: blur(2px); /* Efek blur opsional */
+            backdrop-filter: blur(2px); /* Optional blur effect */
             width: 50px;
             height: 50px;
         }
@@ -112,7 +116,6 @@
             margin-bottom: 0.5rem;
             line-height: 1.5;
         }
-        /* Gaya untuk menu pop-up */
         .popup-menu {
             position: absolute;
             bottom: 100%;
@@ -136,41 +139,47 @@
             opacity: 1;
         }
 
-        /* Styling for the single set of mobile controls based on orientation */
-        #mobile-controls {
-            display: none; /* Sembunyikan secara default */
+        /* --- Separate controls for each orientation --- */
+
+        /* Landscape orientation controls */
+        #landscape-controls {
+            display: none; /* Hidden by default */
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 150px;
+            height: 150px;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 0.5rem;
             z-index: 20;
         }
-
-        /* Landscape orientation on small screens */
+        /* Only show on small screens in landscape mode */
         @media (max-width: 768px) and (orientation: landscape) {
-            #mobile-controls {
+            #landscape-controls {
                 display: grid;
-                position: absolute;
-                bottom: 1rem;
-                right: 1rem;
-                width: 150px;
-                height: 150px;
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-                gap: 0.5rem;
             }
         }
         
-        /* Portrait orientation on small screens */
+        /* Portrait orientation controls */
+        #portrait-controls {
+            display: none; /* Hidden by default */
+            flex-direction: row;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 1rem;
+            width: 100%;
+            z-index: 20;
+        }
+        /* Only show on small screens in portrait mode */
         @media (max-width: 768px) and (orientation: portrait) {
-            #mobile-controls {
+            #portrait-controls {
                 display: flex;
-                flex-direction: row;
-                justify-content: center;
-                gap: 4px; /* Reduced gap for a tighter layout */
-                margin-top: 1rem;
-                width: 100%;
             }
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
 
 <div class="flex flex-col items-center w-full max-w-4xl">
     <div class="text-center mb-4">
@@ -178,25 +187,31 @@
         <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
     </div>
 
-    <!-- Container utama game dengan posisi relatif untuk kontrol -->
+    <!-- Main game container with relative positioning for controls -->
     <div class="relative w-full flex justify-center">
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
         
-        <!-- SATU-SATUNYA set kontrol sentuh yang akan diubah gayanya secara dinamis -->
-        <div id="mobile-controls">
-            <!-- Ini akan kosong di mode potret -->
-            <div class="hidden sm:block"></div> 
-            <button id="up-btn" class="control-button text-2xl">▲</button>
-            <div class="hidden sm:block"></div>
-            <button id="left-btn" class="control-button text-2xl">◀</button>
-            <!-- Di mode lanskap, ini akan menjadi grid, di potret ini hanyalah tombol flex-row -->
-            <div class="hidden sm:block"></div>
-            <button id="right-btn" class="control-button text-2xl">►</button>
-            <div class="hidden sm:block"></div>
-            <button id="down-btn" class="control-button text-2xl">▼</button>
-            <div class="hidden sm:block"></div>
+        <!-- Landscape Floating Controls (Grid) -->
+        <div id="landscape-controls">
+            <div></div>
+            <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
+            <div></div>
+            <button id="landscape-left-btn" class="control-button text-2xl">◀</button>
+            <div></div>
+            <button id="landscape-right-btn" class="control-button text-2xl">►</button>
+            <div></div>
+            <button id="landscape-down-btn" class="control-button text-2xl">▼</button>
+            <div></div>
         </div>
+    </div>
+    
+    <!-- Portrait Controls (Flex row at the bottom) -->
+    <div id="portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
+        <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
+        <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
+        <button id="portrait-left-btn" class="control-button text-2xl">◀</button>
+        <button id="portrait-right-btn" class="control-button text-2xl">►</button>
     </div>
 
     <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
@@ -210,7 +225,7 @@
     </div>
 
     <div class="mt-4 w-full flex flex-col items-center">
-        <!-- Kontainer pop-up menu baru -->
+        <!-- New popup menu container -->
         <div class="relative w-full flex justify-center">
             <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
                 <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
@@ -220,7 +235,7 @@
                 <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
             </div>
         </div>
-        <!-- Tombol pemicu -->
+        <!-- Trigger buttons -->
         <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
             <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
                 Mode Pindah
@@ -257,12 +272,12 @@
 </div>
 
 <script>
-    // Variabel status game
+    // Game state variables
     let money = 1000.00;
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Kecepatan pemain dikurangi menjadi 1.5 untuk nuansa yang lebih lambat
+    // Player speed is significantly reduced to 1.5 for a slower feel
     let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.5, color: '#ef4444' };
     let activeMode = 'move';
     let buildingType = null;
@@ -270,7 +285,7 @@
     let infoBox = { visible: false, x: 0, y: 0, content: '' };
     let isPopupMenuOpen = false;
     
-    // Konstanta game
+    // Game constants
     const gridSize = 40;
     const incomeInterval = 1000;
     const incomePerPersonPerSecond = 10;
@@ -279,7 +294,7 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
-    // Data bangunan dengan nilai pendapatan dan pemeliharaan yang diperbarui
+    // Building data with updated income and maintenance values
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
@@ -288,7 +303,7 @@
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 }
     };
     
-    // Elemen DOM
+    // DOM elements
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const moneyDisplay = document.getElementById('moneyDisplay');
@@ -302,7 +317,7 @@
     const moveModeButton = document.getElementById('moveModeButton');
     const destroyModeButton = document.getElementById('destroyModeButton');
 
-    // Tombol UI (dapatkan hanya tombol bangunan dari dalam pop-up)
+    // UI Buttons (get only building buttons from inside the popup)
     const buildingButtons = {
         house: document.getElementById('houseButton'),
         park: document.getElementById('parkButton'),
@@ -315,13 +330,22 @@
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Kontrol seluler - sekarang dengan ID unik
-    const mobileUpButton = document.getElementById('up-btn');
-    const mobileDownButton = document.getElementById('down-btn');
-    const mobileLeftButton = document.getElementById('left-btn');
-    const mobileRightButton = document.getElementById('right-btn');
+    // Separate mobile controls for landscape and portrait
+    const landscapeControls = {
+        up: document.getElementById('landscape-up-btn'),
+        down: document.getElementById('landscape-down-btn'),
+        left: document.getElementById('landscape-left-btn'),
+        right: document.getElementById('landscape-right-btn')
+    };
+
+    const portraitControls = {
+        up: document.getElementById('portrait-up-btn'),
+        down: document.getElementById('portrait-down-btn'),
+        left: document.getElementById('portrait-left-btn'),
+        right: document.getElementById('portrait-right-btn')
+    };
     
-    // Fungsi pembantu
+    // Helper Functions
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -378,10 +402,10 @@
         });
     }
 
-    // Loop utama game - Perbarui logika dan gambar dalam satu loop
+    // Main Game Loop - Update logic and draw in one loop
     function gameLoop() {
-        // --- Perbarui Logika Game
-        // Pergerakan pemain
+        // --- Update Game Logic
+        // Player movement
         if (activeMode === 'move') {
             let moveX = 0, moveY = 0;
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
@@ -405,7 +429,7 @@
             player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        // Perbarui uang (logika pendapatan dan pengeluaran)
+        // Update money (income and expenses logic)
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
             let totalExpenditure = 0;
@@ -427,16 +451,16 @@
             lastIncomeTime = Date.now();
         }
 
-        // Perbarui tampilan
+        // Update display
         moneyDisplay.textContent = formatRupiah(money);
         populationDisplay.textContent = population;
 
-        // --- Gambar ke Kanvas
-        // Hapus kanvas
+        // --- Draw to Canvas
+        // Clear canvas
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Gambar grid
+        // Draw grid
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
@@ -456,7 +480,7 @@
             ctx.stroke();
         }
 
-        // Gambar bangunan
+        // Draw buildings
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
@@ -469,13 +493,13 @@
             }
         });
 
-        // Gambar pemain
+        // Draw player
         const playerScreenX = player.x - mapOffset.x;
         const playerScreenY = player.y - mapOffset.y;
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
 
-        // Perbarui kotak info
+        // Update info box
         const playerTileX = Math.floor(player.x / gridSize);
         const playerTileY = Math.floor(player.y / gridSize);
         const buildingFound = findBuilding(playerTileX, playerTileY);
@@ -507,11 +531,11 @@
             infoBoxEl.classList.add('opacity-0', 'hidden');
         }
 
-        // Minta bingkai animasi berikutnya
+        // Request next animation frame
         requestAnimationFrame(gameLoop);
     }
 
-    // Mengalihkan menu pop-up
+    // Toggling the pop-up menu
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
         if (isPopupMenuOpen) {
@@ -521,7 +545,7 @@
         }
     }
 
-    // Tetapkan fungsi mode dan perbarui gaya tombol
+    // Set Mode function and update button styles
     function setMode(newMode, newType) {
         activeMode = newMode;
         if (newType) {
@@ -569,9 +593,9 @@
         updateButtonStyles();
     }
 
-    // Fungsi penyiapan awal
+    // Initial setup function
     function init() {
-        // Tambahkan semua event listener
+        // Add all event listeners
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -587,28 +611,20 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        const mobileButtons = [
-            mobileUpButton, mobileDownButton, mobileLeftButton, mobileRightButton
+        // Event listeners for the separate mobile controls
+        const allMobileButtons = [
+            landscapeControls.up, landscapeControls.down, landscapeControls.left, landscapeControls.right,
+            portraitControls.up, portraitControls.down, portraitControls.left, portraitControls.right
         ];
 
-        mobileButtons.forEach(btn => {
+        allMobileButtons.forEach(btn => {
             if (btn) {
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
-                    switch (btn.id) {
-                        case 'up-btn':
-                            touchControls.up = true;
-                            break;
-                        case 'down-btn':
-                            touchControls.down = true;
-                            break;
-                        case 'left-btn':
-                            touchControls.left = true;
-                            break;
-                        case 'right-btn':
-                            touchControls.right = true;
-                            break;
-                    }
+                    if (e.target.id.includes('up')) touchControls.up = true;
+                    if (e.target.id.includes('down')) touchControls.down = true;
+                    if (e.target.id.includes('left')) touchControls.left = true;
+                    if (e.target.id.includes('right')) touchControls.right = true;
                 });
                 btn.addEventListener('touchend', () => {
                     touchControls.up = false;
@@ -673,10 +689,10 @@
             calculateNeeds();
         });
 
-        // Event listener untuk tombol pop-up baru
+        // Event listener for the new popup button
         buildMenuButton.addEventListener('click', togglePopupMenu);
 
-        // Event listener untuk tombol eksternal
+        // Event listeners for external buttons
         moveModeButton.addEventListener('click', () => setMode('move', null));
         destroyModeButton.addEventListener('click', () => setMode('destroy', null));
         restartButton.addEventListener('click', restartGame);
@@ -686,13 +702,13 @@
             if (event.target === modal) {
                 modal.classList.remove('modal-show');
             }
-            // Tutup menu pop-up jika terjadi klik di luar menu dan tombol pemicunya
+            // Close the popup menu if a click happens outside of it and its trigger button
             if (isPopupMenuOpen && !popupMenu.contains(event.target) && !buildMenuButton.contains(event.target)) {
                 togglePopupMenu();
             }
         });
         
-        // Event listener untuk tombol-tombol di dalam pop-up
+        // Event listeners for the buttons inside the popup
         for (const type in buildingButtons) {
             buildingButtons[type].addEventListener('click', () => setMode('build', type));
         }
@@ -707,7 +723,7 @@
 
         restartGame();
 
-        // Interval untuk populasi dan pembaruan kebutuhan
+        // Interval for population and needs updates
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
@@ -734,7 +750,7 @@
         }, 5000);
         setInterval(calculateNeeds, 2000);
 
-        // Mulai loop utama game
+        // Start main game loop
         gameLoop();
     }
 
