@@ -104,6 +104,29 @@
             margin-bottom: 0.5rem;
             line-height: 1.5;
         }
+        /* Style for the pop-up menu */
+        .popup-menu {
+            position: absolute;
+            bottom: 100%; /* Position above the trigger button */
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 1rem;
+            background-color: #fff;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            z-index: 50;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s, opacity 0.2s linear;
+        }
+        .popup-menu.show {
+            visibility: visible;
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -119,7 +142,6 @@
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
     </div>
 
-    <!-- Hapus tampilan pengeluaran sesuai permintaan pengguna -->
     <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
         <div>Uang: <span id="moneyDisplay"></span></div>
         <div>Populasi: <span id="populationDisplay"></span></div>
@@ -144,20 +166,31 @@
         <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
     </div>
 
-    <!-- Container tombol sekarang menggunakan CSS Grid untuk lebar yang sama -->
-    <div class="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-full" id="buttonContainer">
-        <button id="moveModeButton" class="action-button" style="background-color: #3b82f6;">Mode Pindah</button>
-        <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
-        <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
-        <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
-        <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
-        <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
-        <button id="destroyModeButton" class="action-button" style="background-color: #ef4444;">Hancurkan</button>
-        <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan Permainan</button>
-    </div>
-    
-    <div class="mt-4 flex justify-center">
-        <button id="restartButton" class="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 transition-colors">Mulai Ulang</button>
+    <div class="mt-4 w-full flex flex-col items-center">
+        <!-- New popup menu container -->
+        <div class="relative w-full flex justify-center">
+            <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
+                <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
+                <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
+                <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
+                <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
+                <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
+            </div>
+        </div>
+        <!-- Trigger buttons -->
+        <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
+            <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
+                Mode Pindah
+            </button>
+            <button id="destroyModeButton" class="action-button bg-red-500 hover:bg-red-600 transition-colors">
+                Hancurkan
+            </button>
+            <button id="buildMenuButton" class="action-button bg-gray-600 hover:bg-gray-700 transition-colors">
+                Bangun
+            </button>
+            <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
+            <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
+        </div>
     </div>
 </div>
 
@@ -187,10 +220,11 @@
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
     let player = { x: 0, y: 0, width: 28, height: 28, speed: 5, color: '#ef4444' };
-    let mode = 'move';
-    let buildingType = 'house';
+    let activeMode = 'move';
+    let buildingType = null;
     let taxRate = 5;
     let infoBox = { visible: false, x: 0, y: 0, content: '' };
+    let isPopupMenuOpen = false;
     
     // Game constants
     const gridSize = 40;
@@ -219,21 +253,24 @@
     const taxRateSlider = document.getElementById('taxRateSlider');
     const infoBoxEl = document.getElementById('infoBox');
     const modal = document.getElementById('guideModal');
+    const popupMenu = document.getElementById('popupMenu');
+    const buildMenuButton = document.getElementById('buildMenuButton');
+    const moveModeButton = document.getElementById('moveModeButton');
+    const destroyModeButton = document.getElementById('destroyModeButton');
 
-    // UI Buttons
-    const buttons = {
-        move: document.getElementById('moveModeButton'),
+    // UI Buttons (get only building buttons from inside the popup)
+    const buildingButtons = {
         house: document.getElementById('houseButton'),
         park: document.getElementById('parkButton'),
         store: document.getElementById('storeButton'),
         industrial: document.getElementById('industrialButton'),
         road: document.getElementById('roadButton'),
-        destroy: document.getElementById('destroyModeButton'),
-        restart: document.getElementById('restartButton'),
-        guide: document.getElementById('guideButton'),
-        modalClose: document.getElementById('modalCloseButton')
     };
     
+    const guideButton = document.getElementById('guideButton');
+    const restartButton = document.getElementById('restartButton');
+    const modalCloseButton = document.getElementById('modalCloseButton');
+
     // Mobile controls
     const upButton = document.getElementById('upButton');
     const downButton = document.getElementById('downButton');
@@ -301,11 +338,12 @@
     function gameLoop() {
         // --- Pembaruan Logika Game (update)
         // Pergerakan pemain
-        if (mode === 'move') {
+        if (activeMode === 'move') {
             let moveX = 0, moveY = 0;
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
             if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
             if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+            // Perbaikan: Mengganti 'touchX < 0' yang tidak terdefinisi dengan touchControls.right
             if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
             
             const playerScreenX = player.x - mapOffset.x;
@@ -336,7 +374,6 @@
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
                 
-                // Perbaikan: Sekarang mengambil nilai biaya perawatan langsung dari data dasar
                 const stats = buildingStats[b.type];
                 if (stats.maintenance) {
                     totalExpenditure += stats.maintenance;
@@ -431,29 +468,45 @@
         requestAnimationFrame(gameLoop);
     }
 
+    // Toggling the pop-up menu
+    function togglePopupMenu() {
+        isPopupMenuOpen = !isPopupMenuOpen;
+        if (isPopupMenuOpen) {
+            popupMenu.classList.add('show');
+        } else {
+            popupMenu.classList.remove('show');
+        }
+    }
+
     // Set Mode function and update button styles
     function setMode(newMode, newType) {
-        mode = newMode;
+        activeMode = newMode;
         if (newType) {
             buildingType = newType;
         }
         updateButtonStyles();
+        if (newMode === 'build') {
+            togglePopupMenu();
+        }
     }
     
     function updateButtonStyles() {
-        for (const btn in buttons) {
-            if (buttons[btn] && btn !== 'restart' && btn !== 'guide' && btn !== 'modalClose') {
-                buttons[btn].classList.remove('mode-active');
-            }
-        }
+        moveModeButton.classList.remove('mode-active');
+        destroyModeButton.classList.remove('mode-active');
+        buildMenuButton.classList.remove('mode-active');
         
-        if (mode === 'move') {
-            buttons.move.classList.add('mode-active');
-        } else if (mode === 'destroy') {
-            buttons.destroy.classList.add('mode-active');
-        } else if (mode === 'build') {
-            if (buildingType) {
-                buttons[buildingType].classList.add('mode-active');
+        for (const btn in buildingButtons) {
+            buildingButtons[btn].classList.remove('mode-active');
+        }
+
+        if (activeMode === 'move') {
+            moveModeButton.classList.add('mode-active');
+        } else if (activeMode === 'destroy') {
+            destroyModeButton.classList.add('mode-active');
+        } else if (activeMode === 'build' && buildingType) {
+            buildMenuButton.classList.add('mode-active');
+            if (buildingButtons[buildingType]) {
+                buildingButtons[buildingType].classList.add('mode-active');
             }
         }
     }
@@ -464,8 +517,8 @@
         buildings = [];
         mapOffset = { x: 0, y: 0 };
         player = { x: 0, y: 0, width: 28, height: 28, speed: 5, color: '#ef4444' };
-        mode = 'move';
-        buildingType = 'house';
+        activeMode = 'move';
+        buildingType = null;
         taxRate = 5;
         infoBox = { visible: false, x: 0, y: 0, content: '' };
         taxRateDisplay.textContent = taxRate;
@@ -509,12 +562,11 @@
             const tileX = Math.floor((mouseX + mapOffset.x) / gridSize);
             const tileY = Math.floor((mouseY + mapOffset.y) / gridSize);
 
-            if (mode === 'build') {
+            if (activeMode === 'build') {
                 const existingBuilding = findBuilding(tileX, tileY);
                 const stats = buildingStats[buildingType];
                 const cost = stats.cost;
                 if (!existingBuilding && money >= cost) {
-                    // Perbaikan: Hapus properti `maintenance` yang tidak perlu, karena pengeluaran sekarang dihitung langsung dari buildingStats
                     const newBuilding = {
                         id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
                         population: stats.population || 0, 
@@ -536,7 +588,7 @@
                     infoBoxEl.style.top = `${mouseY}px`;
                     setTimeout(() => infoBoxEl.classList.add('opacity-0', 'hidden'), 1000);
                 }
-            } else if (mode === 'destroy') {
+            } else if (activeMode === 'destroy') {
                 const buildingIndex = buildings.findIndex(b =>
                     Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
                 );
@@ -555,25 +607,29 @@
             calculateNeeds();
         });
 
-        buttons.restart.addEventListener('click', restartGame);
-        buttons.move.addEventListener('click', () => setMode('move', null));
-        buttons.house.addEventListener('click', () => setMode('build', 'house'));
-        buttons.park.addEventListener('click', () => setMode('build', 'park'));
-        buttons.store.addEventListener('click', () => setMode('build', 'store'));
-        buttons.industrial.addEventListener('click', () => setMode('build', 'industrial'));
-        buttons.road.addEventListener('click', () => setMode('build', 'road'));
-        buttons.destroy.addEventListener('click', () => setMode('destroy', null));
-        buttons.guide.addEventListener('click', () => {
-            modal.classList.add('modal-show');
-        });
-        buttons.modalClose.addEventListener('click', () => {
-            modal.classList.remove('modal-show');
-        });
+        // Event listener for the new popup button
+        buildMenuButton.addEventListener('click', togglePopupMenu);
+
+        // Event listeners for external buttons
+        moveModeButton.addEventListener('click', () => setMode('move', null));
+        destroyModeButton.addEventListener('click', () => setMode('destroy', null));
+        restartButton.addEventListener('click', restartGame);
+        guideButton.addEventListener('click', () => { modal.classList.add('modal-show'); });
+        modalCloseButton.addEventListener('click', () => { modal.classList.remove('modal-show'); });
         window.addEventListener('click', (event) => {
             if (event.target === modal) {
                 modal.classList.remove('modal-show');
             }
+            // Close the popup menu if a click happens outside of it and its trigger button
+            if (isPopupMenuOpen && !popupMenu.contains(event.target) && !buildMenuButton.contains(event.target)) {
+                togglePopupMenu();
+            }
         });
+        
+        // Event listeners for the buttons inside the popup
+        for (const type in buildingButtons) {
+            buildingButtons[type].addEventListener('click', () => setMode('build', type));
+        }
 
         const resizeCanvas = () => {
             canvas.width = Math.min(800, window.innerWidth - 40);
