@@ -153,17 +153,23 @@
         /* Show floating controls on smaller screens in landscape orientation */
         @media (max-width: 768px) and (orientation: landscape) {
             #mobile-landscape-controls {
-                display: grid; /* Use grid for layout on landscape mobile */
+                display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(3, 1fr);
                 gap: 0.5rem;
+            }
+            #mobile-portrait-controls {
+                display: none;
             }
         }
         
         /* Show non-floating controls on smaller screens in portrait orientation */
         @media (max-width: 768px) and (orientation: portrait) {
             #mobile-portrait-controls {
-                display: flex !important;
+                display: flex;
+            }
+            #mobile-landscape-controls {
+                display: none;
             }
         }
     </style>
