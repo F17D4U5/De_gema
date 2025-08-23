@@ -262,7 +262,7 @@
         <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
         <ul class="guide-list mt-4">
             <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta.</li>
-            <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
+            <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan, Rumah Sakit) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
             <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
             <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko, Industri, dan Rumah Sakit akan memberikan keuntungan.</li>
@@ -302,12 +302,12 @@
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
-        // New hospital building data
+        // New hospital building data with adjusted maintenance to be <70% of income
         hospital: {
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 150,
+            maintenance: 120, // Adjusted to be less than 70% of tax income
             baseTaxIncome: 200,
             patientCapacity: 500,
             influenceRadius: 10 // Radius dalam blok
@@ -395,7 +395,11 @@
                 const distanceX = Math.abs(building.x - b.x);
                 const distanceY = Math.abs(building.y - b.y);
                 const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
-                return b.id !== building.id && distanceInBlocks <= (buildingStats[b.type].influenceRadius || influenceRadiusInBlocks);
+                
+                // Use the specific influence radius if it exists, otherwise use the default
+                const influenceRadius = buildingStats[b.type].influenceRadius || influenceRadiusInBlocks;
+                
+                return b.id !== building.id && distanceInBlocks <= influenceRadius;
             });
 
             if (building.type === 'house') {
@@ -539,7 +543,8 @@
             } else if (buildingFound.type === 'hospital') {
                 infoText += `<p>Kapasitas Pasien: ${buildingStats.hospital.patientCapacity}</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats.hospital.maintenance)}/detik</p>`;
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(buildingStats.hospital.baseTaxIncome)}/detik</p>`;
+                const hospitalTaxIncome = buildingStats.hospital.baseTaxIncome * (taxRate / 100);
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(hospitalTaxIncome)}/detik</p>`;
                 infoText += `<p>Radius Jangkauan: ${buildingStats.hospital.influenceRadius} blok</p>`;
             }
             if (buildingStats[buildingFound.type].maintenance) {
@@ -586,7 +591,10 @@
         buildMenuButton.classList.remove('mode-active');
         
         for (const btn in buildingButtons) {
-            buildingButtons[btn].classList.remove('mode-active');
+            const buttonEl = buildingButtons[btn];
+            if (buttonEl) {
+                buttonEl.classList.remove('mode-active');
+            }
         }
 
         if (activeMode === 'move') {
