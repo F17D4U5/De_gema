@@ -119,11 +119,10 @@
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
     </div>
 
-    <!-- Menambahkan tampilan pengeluaran -->
+    <!-- Hapus tampilan pengeluaran sesuai permintaan pengguna -->
     <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
         <div>Uang: <span id="moneyDisplay"></span></div>
         <div>Populasi: <span id="populationDisplay"></span></div>
-        <div>Pengeluaran: <span id="expenditureDisplay"></span></div>
     </div>
     
     <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
@@ -205,7 +204,6 @@
     // Data bangunan dengan nilai pendapatan dan pengeluaran yang diperbarui
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
-        // Biaya perawatan taman dan jalan yang telah disesuaikan
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
@@ -217,7 +215,6 @@
     const ctx = canvas.getContext('2d');
     const moneyDisplay = document.getElementById('moneyDisplay');
     const populationDisplay = document.getElementById('populationDisplay');
-    const expenditureDisplay = document.getElementById('expenditureDisplay');
     const taxRateDisplay = document.getElementById('taxRateDisplay');
     const taxRateSlider = document.getElementById('taxRateSlider');
     const infoBoxEl = document.getElementById('infoBox');
@@ -334,21 +331,20 @@
             
             buildings.forEach(b => {
                 if (b.type === 'house') {
-                    // Pendapatan dari pajak populasi
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
                 
                 // Menambahkan pengeluaran untuk perawatan jalan dan taman
+                // Sekarang `b.maintenance` seharusnya sudah ada di objek bangunan
                 if (b.maintenance) {
-                    totalExpenditure += buildingStats[b.type].maintenance;
+                    totalExpenditure += b.maintenance;
                 }
             });
             money += totalIncome;
             money -= totalExpenditure;
             lastIncomeTime = Date.now();
-            expenditureDisplay.textContent = formatRupiah(totalExpenditure);
         }
 
         // Pembaruan tampilan
@@ -420,7 +416,7 @@
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             }
             if (buildingFound.type === 'park' || buildingFound.type === 'road') {
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingFound.maintenance)}/detik</p>`;
             }
 
             infoBoxEl.innerHTML = infoText;
@@ -520,7 +516,10 @@
                 if (!existingBuilding && money >= cost) {
                     const newBuilding = {
                         id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
-                        population: stats.population || 0, needs: { happiness: 0, profitability: 0 }
+                        population: stats.population || 0, 
+                        needs: { happiness: 0, profitability: 0 },
+                        // BUGFIX: Sekarang maintenance ditambahkan ke objek bangunan saat dibuat
+                        maintenance: stats.maintenance || 0
                     };
                     buildings.push(newBuilding);
                     money -= cost;
