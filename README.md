@@ -19,7 +19,7 @@
         canvas {
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            touch-action: none; /* Mencegah scrolling saat menyentuh kanvas */
+            touch-action: none; /* Prevents scrolling when touching the canvas */
         }
         .mode-active {
             box-shadow: 0 0 0 4px #60a5fa;
@@ -35,22 +35,6 @@
             pointer-events: none;
             z-index: 10;
         }
-        /* Style for the floating controls */
-        #mobileControlsOverlay {
-            position: absolute;
-            bottom: 1rem;
-            right: 1rem;
-            width: 150px;
-            height: 150px;
-            z-index: 20;
-            display: none; /* Hidden by default */
-        }
-        /* Only show controls on smaller screens */
-        @media (max-width: 768px) {
-            #mobileControlsOverlay {
-                display: block;
-            }
-        }
         .control-button {
             background-color: rgba(209, 213, 219, 0.7); /* Semi-transparent background */
             color: #4b5563;
@@ -62,6 +46,8 @@
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.1s ease-in-out;
             backdrop-filter: blur(2px); /* Optional blur effect for better visibility */
+            width: 50px;
+            height: 50px;
         }
         .control-button:active {
             transform: scale(0.95);
@@ -149,6 +135,37 @@
             visibility: visible;
             opacity: 1;
         }
+        
+        /* Styles for mobile controls in different orientations */
+        #mobile-landscape-controls {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 150px;
+            height: 150px;
+            z-index: 20;
+            display: none; /* Hidden by default */
+        }
+        #mobile-portrait-controls {
+            display: none; /* Hidden by default */
+        }
+
+        /* Show floating controls on smaller screens in landscape orientation */
+        @media (max-width: 768px) and (orientation: landscape) {
+            #mobile-landscape-controls {
+                display: grid; /* Use grid for layout on landscape mobile */
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(3, 1fr);
+                gap: 0.5rem;
+            }
+        }
+        
+        /* Show non-floating controls on smaller screens in portrait orientation */
+        @media (max-width: 768px) and (orientation: portrait) {
+            #mobile-portrait-controls {
+                display: flex !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
@@ -164,8 +181,8 @@
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
         
-        <!-- Floating Mobile Controls Overlay -->
-        <div id="mobileControlsOverlay" class="grid grid-cols-3 grid-rows-3 gap-2">
+        <!-- Floating Mobile Controls Overlay for Landscape Mode -->
+        <div id="mobile-landscape-controls">
             <div></div>
             <button id="upButton" class="control-button text-2xl">▲</button>
             <div></div>
@@ -213,6 +230,13 @@
             <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
             <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
         </div>
+        <!-- Non-floating mobile controls for Portrait Mode -->
+        <div id="mobile-portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
+            <button id="leftButton" class="control-button text-2xl">◀</button>
+            <button id="upButton" class="control-button text-2xl">▲</button>
+            <button id="downButton" class="control-button text-2xl">▼</button>
+            <button id="rightButton" class="control-button text-2xl">►</button>
+        </div>
     </div>
 </div>
 
@@ -241,8 +265,8 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Player speed is significantly reduced to 2 for a slower feel
-    let player = { x: 0, y: 0, width: 28, height: 28, speed: 2, color: '#ef4444' };
+    // Player speed is significantly reduced to 1.5 for a slower feel
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.5, color: '#ef4444' };
     let activeMode = 'move';
     let buildingType = null;
     let taxRate = 5;
@@ -294,7 +318,7 @@
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Mobile controls (now inside the overlay)
+    // Mobile controls
     const upButton = document.getElementById('upButton');
     const downButton = document.getElementById('downButton');
     const leftButton = document.getElementById('leftButton');
@@ -538,7 +562,7 @@
         population = 0;
         buildings = [];
         mapOffset = { x: 0, y: 0 };
-        player = { x: 0, y: 0, width: 28, height: 28, speed: 2, color: '#ef4444' };
+        player = { x: 0, y: 0, width: 28, height: 28, speed: 1.5, color: '#ef4444' };
         activeMode = 'move';
         buildingType = null;
         taxRate = 5;
