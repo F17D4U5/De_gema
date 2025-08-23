@@ -30,8 +30,23 @@
             pointer-events: none;
             z-index: 10;
         }
+        /* Style for the floating controls */
+        #mobileControlsOverlay {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 150px;
+            height: 150px;
+            z-index: 20;
+            display: none; /* Hidden by default */
+        }
+        @media (max-width: 768px) {
+            #mobileControlsOverlay {
+                display: block; /* Show on mobile devices */
+            }
+        }
         .control-button {
-            background-color: #d1d5db;
+            background-color: rgba(209, 213, 219, 0.7); /* Semi-transparent background */
             color: #4b5563;
             border-radius: 0.5rem;
             display: flex;
@@ -40,6 +55,7 @@
             font-weight: bold;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.1s ease-in-out;
+            backdrop-filter: blur(2px); /* Optional blur effect for better visibility */
         }
         .control-button:active {
             transform: scale(0.95);
@@ -140,15 +156,9 @@
     <div class="relative w-full flex justify-center">
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
-    </div>
-
-    <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
-        <div>Uang: <span id="moneyDisplay"></span></div>
-        <div>Populasi: <span id="populationDisplay"></span></div>
-    </div>
-    
-    <div class="md:hidden w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2 flex justify-center mb-4">
-        <div class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
+        
+        <!-- Floating Mobile Controls Overlay -->
+        <div id="mobileControlsOverlay" class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
             <div></div>
             <button id="upButton" class="control-button text-2xl">▲</button>
             <div></div>
@@ -161,6 +171,11 @@
         </div>
     </div>
 
+    <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
+        <div>Uang: <span id="moneyDisplay"></span></div>
+        <div>Populasi: <span id="populationDisplay"></span></div>
+    </div>
+    
     <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
         <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay"></span>%</label>
         <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
@@ -219,7 +234,8 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    let player = { x: 0, y: 0, width: 28, height: 28, speed: 5, color: '#ef4444' };
+    // Player speed is reduced to 3
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 3, color: '#ef4444' };
     let activeMode = 'move';
     let buildingType = null;
     let taxRate = 5;
@@ -235,7 +251,7 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
-    // Data bangunan dengan nilai pendapatan dan pengeluaran yang diperbarui
+    // Building data with updated income and maintenance values
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
@@ -271,7 +287,7 @@
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Mobile controls
+    // Mobile controls (now inside the overlay)
     const upButton = document.getElementById('upButton');
     const downButton = document.getElementById('downButton');
     const leftButton = document.getElementById('leftButton');
@@ -334,16 +350,15 @@
         });
     }
 
-    // Main Game Loop - Pembaruan logika dan gambar dalam satu loop
+    // Main Game Loop - Update logic and draw in one loop
     function gameLoop() {
-        // --- Pembaruan Logika Game (update)
-        // Pergerakan pemain
+        // --- Update Game Logic
+        // Player movement
         if (activeMode === 'move') {
             let moveX = 0, moveY = 0;
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
             if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
             if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-            // Perbaikan: Menghapus referensi yang tidak terdefinisi (touchX) dan memastikan logika pergerakan benar
             if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
             
             const playerScreenX = player.x - mapOffset.x;
@@ -362,7 +377,7 @@
             player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        // Pembaruan uang (Logika pendapatan dan pengeluaran)
+        // Update money (income and expenses logic)
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
             let totalExpenditure = 0;
@@ -384,16 +399,16 @@
             lastIncomeTime = Date.now();
         }
 
-        // Pembaruan tampilan
+        // Update display
         moneyDisplay.textContent = formatRupiah(money);
         populationDisplay.textContent = population;
 
-        // --- Gambar ke Kanvas (draw)
-        // Bersihkan kanvas
+        // --- Draw to Canvas
+        // Clear canvas
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Gambar grid
+        // Draw grid
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
@@ -413,7 +428,7 @@
             ctx.stroke();
         }
 
-        // Gambar bangunan
+        // Draw buildings
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
@@ -426,13 +441,13 @@
             }
         });
 
-        // Gambar pemain
+        // Draw player
         const playerScreenX = player.x - mapOffset.x;
         const playerScreenY = player.y - mapOffset.y;
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
 
-        // Perbarui kotak info
+        // Update info box
         const playerTileX = Math.floor(player.x / gridSize);
         const playerTileY = Math.floor(player.y / gridSize);
         const buildingFound = findBuilding(playerTileX, playerTileY);
@@ -464,7 +479,7 @@
             infoBoxEl.classList.add('opacity-0', 'hidden');
         }
 
-        // Minta bingkai animasi berikutnya
+        // Request next animation frame
         requestAnimationFrame(gameLoop);
     }
 
@@ -516,7 +531,7 @@
         population = 0;
         buildings = [];
         mapOffset = { x: 0, y: 0 };
-        player = { x: 0, y: 0, width: 28, height: 28, speed: 5, color: '#ef4444' };
+        player = { x: 0, y: 0, width: 28, height: 28, speed: 3, color: '#ef4444' };
         activeMode = 'move';
         buildingType = null;
         taxRate = 5;
@@ -528,7 +543,7 @@
 
     // Initial setup function
     function init() {
-        // Tambahkan semua event listener di sini
+        // Add all event listeners
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -544,14 +559,35 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        upButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.up = true; });
-        upButton.addEventListener('touchend', () => touchControls.up = false);
-        downButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.down = true; });
-        downButton.addEventListener('touchend', () => touchControls.down = false);
-        leftButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.left = true; });
-        leftButton.addEventListener('touchend', () => touchControls.left = false);
-        rightButton.addEventListener('touchstart', (e) => { e.preventDefault(); touchControls.right = true; });
-        rightButton.addEventListener('touchend', () => touchControls.right = false);
+        const mobileControlButtons = [upButton, downButton, leftButton, rightButton];
+
+        mobileControlButtons.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    switch (btn.id) {
+                        case 'upButton':
+                            touchControls.up = true;
+                            break;
+                        case 'downButton':
+                            touchControls.down = true;
+                            break;
+                        case 'leftButton':
+                            touchControls.left = true;
+                            break;
+                        case 'rightButton':
+                            touchControls.right = true;
+                            break;
+                    }
+                });
+                btn.addEventListener('touchend', () => {
+                    touchControls.up = false;
+                    touchControls.down = false;
+                    touchControls.left = false;
+                    touchControls.right = false;
+                });
+            }
+        });
 
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -641,7 +677,7 @@
 
         restartGame();
 
-        // Interval untuk pembaruan populasi dan kebutuhan, yang tidak memerlukan kecepatan 60 FPS
+        // Interval for population and needs updates
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
@@ -668,7 +704,7 @@
         }, 5000);
         setInterval(calculateNeeds, 2000);
 
-        // Mulai loop game utama
+        // Start main game loop
         gameLoop();
     }
 
