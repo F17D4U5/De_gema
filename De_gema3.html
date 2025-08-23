@@ -10,6 +10,11 @@
             font-family: 'Inter', sans-serif;
             margin: 0;
             background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
         }
         canvas {
             border-radius: 0.5rem;
@@ -40,9 +45,10 @@
             z-index: 20;
             display: none; /* Hidden by default */
         }
+        /* Only show controls on smaller screens */
         @media (max-width: 768px) {
             #mobileControlsOverlay {
-                display: block; /* Show on mobile devices */
+                display: block;
             }
         }
         .control-button {
@@ -153,12 +159,13 @@
         <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
     </div>
 
+    <!-- Main game container with relative positioning for controls -->
     <div class="relative w-full flex justify-center">
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
         
         <!-- Floating Mobile Controls Overlay -->
-        <div id="mobileControlsOverlay" class="grid grid-cols-3 grid-rows-3 gap-2 w-48 h-48">
+        <div id="mobileControlsOverlay" class="grid grid-cols-3 grid-rows-3 gap-2">
             <div></div>
             <button id="upButton" class="control-button text-2xl">▲</button>
             <div></div>
@@ -234,8 +241,8 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Player speed is reduced to 3
-    let player = { x: 0, y: 0, width: 28, height: 28, speed: 3, color: '#ef4444' };
+    // Player speed is significantly reduced to 2 for a slower feel
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 2, color: '#ef4444' };
     let activeMode = 'move';
     let buildingType = null;
     let taxRate = 5;
@@ -531,7 +538,7 @@
         population = 0;
         buildings = [];
         mapOffset = { x: 0, y: 0 };
-        player = { x: 0, y: 0, width: 28, height: 28, speed: 3, color: '#ef4444' };
+        player = { x: 0, y: 0, width: 28, height: 28, speed: 2, color: '#ef4444' };
         activeMode = 'move';
         buildingType = null;
         taxRate = 5;
