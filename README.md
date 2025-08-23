@@ -336,10 +336,10 @@
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 }
                 
-                // Menambahkan pengeluaran untuk perawatan jalan dan taman
-                // Sekarang `b.maintenance` seharusnya sudah ada di objek bangunan
-                if (b.maintenance) {
-                    totalExpenditure += b.maintenance;
+                // Perbaikan: Sekarang mengambil nilai biaya perawatan langsung dari data dasar
+                const stats = buildingStats[b.type];
+                if (stats.maintenance) {
+                    totalExpenditure += stats.maintenance;
                 }
             });
             money += totalIncome;
@@ -415,8 +415,8 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             }
-            if (buildingFound.type === 'park' || buildingFound.type === 'road') {
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingFound.maintenance)}/detik</p>`;
+            if (buildingStats[buildingFound.type].maintenance) {
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
             }
 
             infoBoxEl.innerHTML = infoText;
@@ -514,12 +514,11 @@
                 const stats = buildingStats[buildingType];
                 const cost = stats.cost;
                 if (!existingBuilding && money >= cost) {
+                    // Perbaikan: Hapus properti `maintenance` yang tidak perlu, karena pengeluaran sekarang dihitung langsung dari buildingStats
                     const newBuilding = {
                         id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
                         population: stats.population || 0, 
-                        needs: { happiness: 0, profitability: 0 },
-                        // BUGFIX: Sekarang maintenance ditambahkan ke objek bangunan saat dibuat
-                        maintenance: stats.maintenance || 0
+                        needs: { happiness: 0, profitability: 0 }
                     };
                     buildings.push(newBuilding);
                     money -= cost;
