@@ -238,10 +238,10 @@
         </div>
         <!-- Non-floating mobile controls for Portrait Mode -->
         <div id="mobile-portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
-            <button id="leftButton" class="control-button text-2xl">◀</button>
-            <button id="upButton" class="control-button text-2xl">▲</button>
-            <button id="downButton" class="control-button text-2xl">▼</button>
-            <button id="rightButton" class="control-button text-2xl">►</button>
+            <button id="portraitLeftButton" class="control-button text-2xl">◀</button>
+            <button id="portraitUpButton" class="control-button text-2xl">▲</button>
+            <button id="portraitDownButton" class="control-button text-2xl">▼</button>
+            <button id="portraitRightButton" class="control-button text-2xl">►</button>
         </div>
     </div>
 </div>
@@ -324,12 +324,17 @@
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Mobile controls
-    const upButton = document.getElementById('upButton');
-    const downButton = document.getElementById('downButton');
-    const leftButton = document.getElementById('leftButton');
-    const rightButton = document.getElementById('rightButton');
+    // Mobile controls - now with unique IDs
+    const floatingUpButton = document.getElementById('upButton');
+    const floatingDownButton = document.getElementById('downButton');
+    const floatingLeftButton = document.getElementById('leftButton');
+    const floatingRightButton = document.getElementById('rightButton');
 
+    const portraitUpButton = document.getElementById('portraitUpButton');
+    const portraitDownButton = document.getElementById('portraitDownButton');
+    const portraitLeftButton = document.getElementById('portraitLeftButton');
+    const portraitRightButton = document.getElementById('portraitRightButton');
+    
     // Helper Functions
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
@@ -596,23 +601,30 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        const mobileControlButtons = [upButton, downButton, leftButton, rightButton];
+        const allMobileButtons = [
+            floatingUpButton, floatingDownButton, floatingLeftButton, floatingRightButton,
+            portraitUpButton, portraitDownButton, portraitLeftButton, portraitRightButton
+        ];
 
-        mobileControlButtons.forEach(btn => {
+        allMobileButtons.forEach(btn => {
             if (btn) {
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     switch (btn.id) {
                         case 'upButton':
+                        case 'portraitUpButton':
                             touchControls.up = true;
                             break;
                         case 'downButton':
+                        case 'portraitDownButton':
                             touchControls.down = true;
                             break;
                         case 'leftButton':
+                        case 'portraitLeftButton':
                             touchControls.left = true;
                             break;
                         case 'rightButton':
+                        case 'portraitRightButton':
                             touchControls.right = true;
                             break;
                     }
