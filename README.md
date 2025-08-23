@@ -233,6 +233,7 @@
                 <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
                 <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
                 <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
+                <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
             </div>
         </div>
         <!-- Trigger buttons -->
@@ -264,7 +265,7 @@
             <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
             <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
-            <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko dan Industri akan memberikan keuntungan.</li>
+            <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko, Industri, dan Rumah Sakit akan memberikan keuntungan.</li>
             <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
             <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
         </ul>
@@ -300,7 +301,17 @@
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
-        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 }
+        road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
+        // New hospital building data
+        hospital: {
+            cost: 500,
+            name: 'Rumah Sakit',
+            color: '#7b241c',
+            maintenance: 150,
+            baseTaxIncome: 200,
+            patientCapacity: 500,
+            influenceRadius: 10 // Radius dalam blok
+        }
     };
     
     // DOM elements
@@ -324,6 +335,7 @@
         store: document.getElementById('storeButton'),
         industrial: document.getElementById('industrialButton'),
         road: document.getElementById('roadButton'),
+        hospital: document.getElementById('hospitalButton'), // New hospital button
     };
     
     const guideButton = document.getElementById('guideButton');
@@ -382,12 +394,15 @@
             const nearbyBuildings = buildings.filter(b => {
                 const distanceX = Math.abs(building.x - b.x);
                 const distanceY = Math.abs(building.y - b.y);
-                return b.id !== building.id && distanceX <= gridSize * influenceRadiusInBlocks && distanceY <= gridSize * influenceRadiusInBlocks;
+                const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
+                return b.id !== building.id && distanceInBlocks <= (buildingStats[b.type].influenceRadius || influenceRadiusInBlocks);
             });
 
             if (building.type === 'house') {
                 const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
-                let happinessBonus = nearbyParks * 15;
+                const nearbyHospitals = nearbyBuildings.filter(b => b.type === 'hospital').length; // Check for hospitals
+                
+                let happinessBonus = (nearbyParks * 15) + (nearbyHospitals * 20); // Add hospital bonus
                 if (isConnected) happinessBonus += 30;
                 let taxPenalty = taxRate > 10 ? (taxRate - 10) * 2 : 0;
                 happinessBonus -= taxPenalty;
@@ -439,6 +454,9 @@
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
+                } else if (b.type === 'hospital') {
+                    totalIncome += buildingStats.hospital.baseTaxIncome * (taxRate / 100);
+                    totalExpenditure += buildingStats.hospital.maintenance;
                 }
                 
                 const stats = buildingStats[b.type];
@@ -518,6 +536,11 @@
                 const profitPerBuilding = buildingStats[buildingFound.type].baseIncome * (buildingFound.needs.profitability / 100) * (taxRate / 100);
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
+            } else if (buildingFound.type === 'hospital') {
+                infoText += `<p>Kapasitas Pasien: ${buildingStats.hospital.patientCapacity}</p>`;
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats.hospital.maintenance)}/detik</p>`;
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(buildingStats.hospital.baseTaxIncome)}/detik</p>`;
+                infoText += `<p>Radius Jangkauan: ${buildingStats.hospital.influenceRadius} blok</p>`;
             }
             if (buildingStats[buildingFound.type].maintenance) {
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
@@ -605,6 +628,7 @@
             else if (e.key.toLowerCase() === 'i') setMode('build', 'industrial');
             else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
             else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
+            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital'); // New shortcut for hospital
         });
 
         window.addEventListener('keyup', (e) => {
