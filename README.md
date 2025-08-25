@@ -295,7 +295,7 @@
 
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
-        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
+        park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10, influenceRadius: 5 },
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
@@ -303,9 +303,8 @@
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 30,
-            baseTaxIncome: 200,
-            patientCapacity: 500,
+            maintenance: 30, // Biaya tetap per detik
+            baseTaxIncome: 100, // Pendapatan pajak dasar, diskalakan dengan taxRate
             influenceRadius: 10
         }
     };
@@ -379,31 +378,44 @@
     }
 
     function calculateNeeds() {
+        const influentialBuildings = buildings.filter(b => buildingStats[b.type].influenceRadius);
+
         buildings.forEach(building => {
             const tileX = Math.floor(building.x / gridSize);
             const tileY = Math.floor(building.y / gridSize);
             const isConnected = isConnectedToRoad(tileX, tileY);
-            const nearbyBuildings = buildings.filter(b => {
-                const distanceX = Math.abs(building.x - b.x);
-                const distanceY = Math.abs(building.y - b.y);
-                const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
-                
-                const influenceRadius = buildingStats[b.type].influenceRadius || influenceRadiusInBlocks;
-                
-                return b.id !== building.id && distanceInBlocks <= influenceRadius;
-            });
 
             if (building.type === 'house') {
-                const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
-                const nearbyHospitals = nearbyBuildings.filter(b => b.type === 'hospital').length;
+                let happinessBonus = 0;
                 
-                let happinessBonus = (nearbyParks * 15) + (nearbyHospitals * 20);
+                influentialBuildings.forEach(influencer => {
+                    const distanceX = Math.abs(building.x - influencer.x);
+                    const distanceY = Math.abs(building.y - influencer.y);
+                    const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
+                    const influenceRadius = buildingStats[influencer.type].influenceRadius;
+
+                    if (distanceInBlocks <= influenceRadius) {
+                        if (influencer.type === 'park') {
+                            happinessBonus += 15;
+                        } else if (influencer.type === 'hospital') {
+                            happinessBonus += 25; 
+                        }
+                    }
+                });
+
                 if (isConnected) happinessBonus += 30;
                 let taxPenalty = taxRate > 10 ? (taxRate - 10) * 2 : 0;
                 happinessBonus -= taxPenalty;
+                
                 building.needs.happiness = Math.max(0, Math.min(100, Math.floor(happinessBonus + 50)));
             } else if (building.type === 'store' || building.type === 'industrial') {
-                const nearbyHouses = nearbyBuildings.filter(b => b.type === 'house').length;
+                const nearbyHouses = buildings.filter(b => {
+                    const distanceX = Math.abs(building.x - b.x);
+                    const distanceY = Math.abs(building.y - b.y);
+                    const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
+                    return b.type === 'house' && distanceInBlocks <= influenceRadiusInBlocks;
+                }).length;
+                
                 let profitabilityBonus = nearbyHouses * 20;
                 if (isConnected) profitabilityBonus += 40;
                 if (population === 0) profitabilityBonus = 0;
@@ -441,16 +453,19 @@
             let totalExpenditure = 0;
             
             buildings.forEach(b => {
+                const stats = buildingStats[b.type];
+                
+                // Menghitung pendapatan berdasarkan jenis bangunan
                 if (b.type === 'house') {
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
-                    totalIncome += buildingStats[b.type].baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
+                    totalIncome += stats.baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 } else if (b.type === 'hospital') {
-                    totalIncome += buildingStats.hospital.baseTaxIncome * (taxRate / 100);
-                    totalExpenditure += buildingStats.hospital.maintenance;
+                    // FIX BUG #1: Pendapatan rumah sakit sekarang dihitung berdasarkan tingkat pajak
+                    totalIncome += stats.baseTaxIncome * (taxRate / 100);
                 }
                 
-                const stats = buildingStats[b.type];
+                // FIX BUG #2: Biaya perawatan/pemeliharaan dihitung terpisah sebagai pengeluaran
                 if (stats.maintenance) {
                     totalExpenditure += stats.maintenance;
                 }
@@ -511,22 +526,26 @@
                 <h3 class="font-bold text-lg mb-1">${buildingStats[buildingFound.type].name}</h3>
                 <p>Posisi: (${Math.floor(buildingFound.x/gridSize)}, ${Math.floor(buildingFound.y/gridSize)})</p>
             `;
+            const stats = buildingStats[buildingFound.type];
             if (buildingFound.type === 'house') {
                 infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
                 infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
                 const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
-                const profitPerBuilding = buildingStats[buildingFound.type].baseIncome * (buildingFound.needs.profitability / 100) * (taxRate / 100);
+                const profitPerBuilding = stats.baseIncome * (buildingFound.needs.profitability / 100) * (taxRate / 100);
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                infoText += `<p>Kapasitas Pasien: ${buildingStats.hospital.patientCapacity}</p>`;
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(buildingStats.hospital.baseTaxIncome)}/detik</p>`;
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats.hospital.maintenance)}/detik</p>`;
+                // FIX BUG #1 (DISPLAY): Menampilkan pendapatan dan biaya rumah sakit secara terpisah
+                const hospitalIncome = stats.baseTaxIncome * (taxRate / 100);
+                const hospitalMaintenance = stats.maintenance;
+                infoText += `<p>Pendapatan Pajak: ${formatRupiah(hospitalIncome)}/detik</p>`;
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(hospitalMaintenance)}/detik</p>`;
+                infoText += `<p>Radius Pengaruh: ${stats.influenceRadius} blok</p>`;
             }
-            if (buildingStats[buildingFound.type].maintenance && buildingFound.type !== 'hospital') {
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
+            if (stats.maintenance && buildingFound.type !== 'hospital') {
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
             }
 
             infoBoxEl.innerHTML = infoText;
@@ -725,16 +744,13 @@
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
-                if (taxRate <= 20) {
-                    changeAmount = Math.floor(Math.random() * 2) + 1;
-                } else if (taxRate <= 45) {
-                    const increaseChance = (45 - taxRate) / 25;
-                    const decreaseChance = (taxRate - 20) / 25;
-                    if (Math.random() < increaseChance) changeAmount += Math.floor(Math.random() * 2) + 1;
-                    if (Math.random() < decreaseChance) changeAmount -= Math.floor(Math.random() * 2) + 1;
-                } else {
-                    changeAmount = -(Math.floor(Math.random() * 2) + 1);
+                // Logika perubahan populasi berdasarkan kebahagiaan
+                if (house.needs.happiness >= 80) {
+                    changeAmount = Math.floor(Math.random() * 2) + 1; // Populasi meningkat
+                } else if (house.needs.happiness < 50) {
+                    changeAmount = -(Math.floor(Math.random() * 2) + 1); // Populasi menurun
                 }
+                
                 let newPopulation = house.population + changeAmount;
                 if (taxRate > 40 && newPopulation < 0) newPopulation = 0;
                 else if (newPopulation < 1) newPopulation = 1;
