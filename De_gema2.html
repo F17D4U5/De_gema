@@ -539,7 +539,7 @@
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
                 const profitPerBuilding = buildingStats[buildingFound.type].baseIncome * (buildingFound.needs.profitability / 100) * (taxRate / 100);
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
-                infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
                 infoText += `<p>Kapasitas Pasien: ${buildingStats.hospital.patientCapacity}</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(buildingStats.hospital.baseTaxIncome)}/detik</p>`;
