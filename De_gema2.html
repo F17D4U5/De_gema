@@ -299,13 +299,14 @@
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
+        // Perbaikan: Nilai-nilai rumah sakit yang telah diperbarui
         hospital: {
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
             maintenance: 30, 
-            patientCapacity: 100, // Perbaikan: Kapasitas ditingkatkan
-            treatmentCost: 10, // Perbaikan: Biaya pengobatan ditingkatkan
+            patientCapacity: 100, // KAPASITAS DITINGKATKAN DARI 10 KE 100
+            treatmentCost: 10, // BIAYA PENGOBATAN PER ORANG DITINGKATKAN DARI 2.5 KE 10
             influenceRadius: 10 
         }
     };
@@ -537,15 +538,16 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                // Perbaikan: Tampilan info box sesuai permintaan
+                // Perbaikan: Tampilan info box yang telah diperbarui
+                const hospitalTax = buildingFound.currentPatients * stats.treatmentCost;
+                const hospitalMaintenance = stats.maintenance;
+                const netIncome = (hospitalTax * (taxRate / 100)) - hospitalMaintenance;
+                
                 infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
                 infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
-                
-                // Perhitungan pendapatan pajak rumah sakit berdasarkan formula baru
-                const hospitalTax = buildingFound.currentPatients * stats.treatmentCost * (taxRate / 100);
-                const hospitalMaintenance = stats.maintenance;
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(hospitalTax)}/detik</p>`;
+                infoText += `<p>Pajak Pengobatan: ${formatRupiah(hospitalTax * (taxRate / 100))}/detik</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(hospitalMaintenance)}/detik</p>`;
+                infoText += `<p><strong>Keuntungan Bersih: ${formatRupiah(netIncome)}/detik</strong></p>`;
             }
             if (stats.maintenance && buildingFound.type !== 'hospital') {
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
@@ -682,7 +684,6 @@
                         type: buildingType, 
                         color: stats.color,
                         population: stats.population || 0, 
-                        // Perbaikan: Inisialisasi pasien menjadi 0 saat populasi nol
                         currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
                         needs: { happiness: 0, profitability: 0 }
                     };
