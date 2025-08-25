@@ -6,17 +6,25 @@
     <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Perbaikan: Hapus properti pemusatan yang mencegah scrolling */
+        /* Perbaikan: Wadah fleksibel untuk konten yang dapat digulir */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             background-color: #f3f4f6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Ganti dari 'center' ke 'flex-start' */
+        }
+        .scroll-container {
+            width: 100%;
+            max-width: 800px;
             padding: 1rem;
             display: flex;
             flex-direction: column;
-            align-items: center; /* Tetap pusatkan secara horizontal */
-            min-height: 100vh;
-            overflow-y: auto; /* Memungkinkan scrolling vertikal */
+            align-items: center;
+            overflow-y: auto; /* Memungkinkan scrolling di wadah ini */
+            -webkit-overflow-scrolling: touch; /* Perilaku scrolling yang lebih baik di iOS */
         }
         canvas {
             border-radius: 0.5rem;
@@ -174,72 +182,74 @@
 </head>
 <body>
 
-<div class="main-container flex flex-col items-center w-full max-w-full md:max-w-4xl">
-    <div class="text-center mb-4">
-        <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
-        <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
-    </div>
-
-    <div class="relative w-full flex justify-center">
-        <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
-        <div id="infoBox" class="info-box opacity-0 hidden"></div>
-        
-        <div id="landscape-controls">
-            <div></div>
-            <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
-            <div></div>
-            <button id="landscape-left-btn" class="control-button text-2xl">◀</button>
-            <div></div>
-            <button id="landscape-right-btn" class="control-button text-2xl">►</button>
-            <div></div>
-            <button id="landscape-down-btn" class="control-button text-2xl">▼</button>
-            <div></div>
+<div class="scroll-container">
+    <div class="main-container flex flex-col items-center w-full max-w-full md:max-w-4xl">
+        <div class="text-center mb-4">
+            <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
+            <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
         </div>
-    </div>
-    
-    <div id="portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
-        <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
-        <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
-        <button id="portrait-left-btn" class="control-button text-2xl">◀</button>
-        <button id="portrait-right-btn" class="control-button text-2xl">►</button>
-    </div>
 
-    <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
-        <div>Uang: <span id="moneyDisplay"></span></div>
-        <div>Populasi: <span id="populationDisplay"></span></div>
-    </div>
-    
-    <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
-        <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay"></span>%</label>
-        <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
-    </div>
-
-    <div class="mt-4 w-full flex flex-col items-center">
         <div class="relative w-full flex justify-center">
-            <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
-                <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
-                <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
-                <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
-                <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
-                <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
-                <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
+            <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
+            <div id="infoBox" class="info-box opacity-0 hidden"></div>
+            
+            <div id="landscape-controls">
+                <div></div>
+                <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
+                <div></div>
+                <button id="landscape-left-btn" class="control-button text-2xl">◀</button>
+                <div></div>
+                <button id="landscape-right-btn" class="control-button text-2xl">►</button>
+                <div></div>
+                <button id="landscape-down-btn" class="control-button text-2xl">▼</button>
+                <div></div>
             </div>
         </div>
-        <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
-            <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
-                Mode Pindah
-            </button>
-            <button id="destroyModeButton" class="action-button bg-red-500 hover:bg-red-600 transition-colors">
-                Hancurkan
-            </button>
-            <button id="buildMenuButton" class="action-button bg-gray-600 hover:bg-gray-700 transition-colors">
-                Bangun
-            </button>
-            <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
-            <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
+        
+        <div id="portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
+            <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
+            <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
+            <button id="portrait-left-btn" class="control-button text-2xl">◀</button>
+            <button id="portrait-right-btn" class="control-button text-2xl">►</button>
         </div>
-    </div>
 
+        <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
+            <div>Uang: <span id="moneyDisplay"></span></div>
+            <div>Populasi: <span id="populationDisplay"></span></div>
+        </div>
+        
+        <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
+            <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay"></span>%</label>
+            <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
+        </div>
+
+        <div class="mt-4 w-full flex flex-col items-center">
+            <div class="relative w-full flex justify-center">
+                <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
+                    <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
+                    <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
+                    <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
+                    <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
+                    <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
+                    <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
+                </div>
+            </div>
+            <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
+                <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
+                    Mode Pindah
+                </button>
+                <button id="destroyModeButton" class="action-button bg-red-500 hover:bg-red-600 transition-colors">
+                    Hancurkan
+                </button>
+                <button id="buildMenuButton" class="action-button bg-gray-600 hover:bg-gray-700 transition-colors">
+                    Bangun
+                </button>
+                <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
+                <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
+            </div>
+        </div>
+
+    </div>
 </div>
 
 <div id="guideModal" class="modal">
