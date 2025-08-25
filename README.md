@@ -299,14 +299,13 @@
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
-        // Perbaikan: Nilai-nilai rumah sakit yang telah diperbarui
         hospital: {
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
             maintenance: 30, 
-            patientCapacity: 100, // KAPASITAS DITINGKATKAN DARI 10 KE 100
-            treatmentCost: 10, // BIAYA PENGOBATAN PER ORANG DITINGKATKAN DARI 2.5 KE 10
+            patientCapacity: 100, 
+            treatmentCost: 10, 
             influenceRadius: 10 
         }
     };
@@ -462,12 +461,13 @@
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     totalIncome += stats.baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 } else if (b.type === 'hospital') {
-                    // Implementasi formula baru untuk pendapatan rumah sakit
-                    totalIncome += b.currentPatients * stats.treatmentCost * (taxRate / 100);
+                    const hospitalTax = b.currentPatients * stats.treatmentCost;
+                    const hospitalMaintenance = stats.maintenance;
+                    const netIncome = (hospitalTax * (taxRate / 100)) - hospitalMaintenance;
+                    totalIncome += netIncome;
                 }
                 
-                // Biaya pemeliharaan adalah pengeluaran terpisah
-                if (stats.maintenance) {
+                if (stats.maintenance && b.type !== 'hospital') {
                     totalExpenditure += stats.maintenance;
                 }
             });
@@ -500,19 +500,27 @@
             ctx.lineTo(canvas.width, drawY);
             ctx.stroke();
         }
-
+        
+        // Loop untuk menggambar semua bangunan
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
             if (drawX + gridSize < 0 || drawX > canvas.width || drawY + gridSize < 0 || drawY > canvas.height) return;
+            
             ctx.fillStyle = building.color;
-            ctx.fillRect(drawX, drawY, gridSize, gridSize);
-            if (building.type !== 'road') {
+
+            // Logika baru untuk menggambar bentuk bangunan
+            if (building.type === 'house') {
+                drawHouse(drawX, drawY, gridSize, gridSize, building.color);
+            } else if (building.type === 'road') {
+                ctx.fillRect(drawX, drawY, gridSize, gridSize);
+            } else {
+                ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 ctx.strokeStyle = '#334155';
                 ctx.strokeRect(drawX, drawY, gridSize, gridSize);
             }
         });
-
+        
         const playerScreenX = player.x - mapOffset.x;
         const playerScreenY = player.y - mapOffset.y;
         ctx.fillStyle = player.color;
@@ -538,7 +546,6 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                // Perbaikan: Tampilan info box yang telah diperbarui
                 const hospitalTax = buildingFound.currentPatients * stats.treatmentCost;
                 const hospitalMaintenance = stats.maintenance;
                 const netIncome = (hospitalTax * (taxRate / 100)) - hospitalMaintenance;
@@ -564,6 +571,41 @@
         requestAnimationFrame(gameLoop);
     }
 
+    /**
+     * @param {number} x - Posisi X di canvas.
+     * @param {number} y - Posisi Y di canvas.
+     * @param {number} width - Lebar rumah.
+     * @param {number} height - Tinggi rumah.
+     * @param {string} color - Warna rumah.
+     */
+    function drawHouse(x, y, width, height, color) {
+        // Menggambar badan rumah
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x, y + height);
+        ctx.lineTo(x, y + height * 0.4);
+        ctx.lineTo(x + width * 0.5, y);
+        ctx.lineTo(x + width, y + height * 0.4);
+        ctx.lineTo(x + width, y + height);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#334155';
+        ctx.stroke();
+
+        // Menggambar cerobong asap
+        ctx.fillStyle = '#6b7280';
+        ctx.fillRect(x + width * 0.7, y + height * 0.1, width * 0.1, height * 0.2);
+        
+        // Menggambar pintu
+        ctx.fillStyle = '#4a5568';
+        ctx.fillRect(x + width * 0.4, y + height * 0.6, width * 0.2, height * 0.4);
+        
+        // Menggambar jendela
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(x + width * 0.15, y + height * 0.5, width * 0.2, height * 0.2);
+        ctx.fillRect(x + width * 0.65, y + height * 0.5, width * 0.2, height * 0.2);
+    }
+    
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
         if (isPopupMenuOpen) {
@@ -754,11 +796,10 @@
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
-                // Logika perubahan populasi berdasarkan kebahagiaan
                 if (house.needs.happiness >= 80) {
-                    changeAmount = Math.floor(Math.random() * 2) + 1; // Populasi meningkat
+                    changeAmount = Math.floor(Math.random() * 2) + 1;
                 } else if (house.needs.happiness < 50) {
-                    changeAmount = -(Math.floor(Math.random() * 2) + 1); // Populasi menurun
+                    changeAmount = -(Math.floor(Math.random() * 2) + 1);
                 }
                 
                 let newPopulation = house.population + changeAmount;
@@ -772,16 +813,13 @@
             });
             population = totalPopulation;
 
-            // Perbaikan: Logika untuk mengubah jumlah pasien secara dinamis, tergantung pada populasi kota
             buildings.filter(b => b.type === 'hospital').forEach(hospital => {
                 const stats = buildingStats.hospital;
-                // Jika tidak ada populasi, tidak ada pasien
                 if (population === 0) {
                     hospital.currentPatients = 0;
                     return;
                 }
                 
-                // Mengubah jumlah pasien secara acak, terbatas pada populasi dan kapasitas
                 let change = 0;
                 if (Math.random() < 0.5) {
                     change = 1;
@@ -790,8 +828,6 @@
                 }
                 
                 let newPatients = hospital.currentPatients + change;
-                
-                // Memastikan jumlah pasien tidak negatif atau melebihi populasi atau kapasitas
                 hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, Math.min(population, newPatients)));
             });
 
