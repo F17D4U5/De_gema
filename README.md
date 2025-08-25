@@ -6,21 +6,30 @@
     <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Perbaikan: Wadah fleksibel untuk konten yang dapat digulir */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             background-color: #f3f4f6;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            align-items: flex-start; /* Ganti dari 'center' ke 'flex-start' */
+        }
+        .scroll-container {
+            width: 100%;
+            max-width: 800px;
             padding: 1rem;
-            overflow: hidden; /* Prevent body scrolling */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-y: auto; /* Memungkinkan scrolling di wadah ini */
+            -webkit-overflow-scrolling: touch; /* Perilaku scrolling yang lebih baik di iOS */
         }
         canvas {
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            touch-action: none; /* Prevents scrolling when touching the canvas */
+            touch-action: none;
             width: 100%;
             height: auto;
             max-width: 800px;
@@ -40,7 +49,7 @@
             z-index: 10;
         }
         .control-button {
-            background-color: rgba(209, 213, 219, 0.7); /* Semi-transparent background */
+            background-color: rgba(209, 213, 219, 0.7);
             color: #4b5563;
             border-radius: 0.5rem;
             display: flex;
@@ -49,7 +58,7 @@
             font-weight: bold;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.1s ease-in-out;
-            backdrop-filter: blur(2px); /* Optional blur effect */
+            backdrop-filter: blur(2px);
             width: 50px;
             height: 50px;
         }
@@ -138,12 +147,8 @@
             visibility: visible;
             opacity: 1;
         }
-
-        /* --- Separate controls for each orientation --- */
-
-        /* Landscape orientation controls */
         #landscape-controls {
-            display: none; /* Hidden by default */
+            display: none;
             position: absolute;
             bottom: 1rem;
             right: 1rem;
@@ -154,16 +159,13 @@
             gap: 0.5rem;
             z-index: 20;
         }
-        /* Only show on small screens in landscape mode */
         @media (max-width: 768px) and (orientation: landscape) {
             #landscape-controls {
                 display: grid;
             }
         }
-        
-        /* Portrait orientation controls */
         #portrait-controls {
-            display: none; /* Hidden by default */
+            display: none;
             flex-direction: row;
             justify-content: center;
             gap: 4px;
@@ -171,7 +173,6 @@
             width: 100%;
             z-index: 20;
         }
-        /* Only show on small screens in portrait mode */
         @media (max-width: 768px) and (orientation: portrait) {
             #portrait-controls {
                 display: flex;
@@ -179,77 +180,75 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+<body>
 
-<div class="flex flex-col items-center w-full max-w-4xl">
-    <div class="text-center mb-4">
-        <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
-        <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
-    </div>
-
-    <!-- Main game container with relative positioning for controls -->
-    <div class="relative w-full flex justify-center">
-        <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
-        <div id="infoBox" class="info-box opacity-0 hidden"></div>
-        
-        <!-- Landscape Floating Controls (Grid) -->
-        <div id="landscape-controls">
-            <div></div>
-            <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
-            <div></div>
-            <button id="landscape-left-btn" class="control-button text-2xl">◀</button>
-            <div></div>
-            <button id="landscape-right-btn" class="control-button text-2xl">►</button>
-            <div></div>
-            <button id="landscape-down-btn" class="control-button text-2xl">▼</button>
-            <div></div>
+<div class="scroll-container">
+    <div class="main-container flex flex-col items-center w-full max-w-full md:max-w-4xl">
+        <div class="text-center mb-4">
+            <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
+            <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
         </div>
-    </div>
-    
-    <!-- Portrait Controls (Flex row at the bottom) -->
-    <div id="portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
-        <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
-        <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
-        <button id="portrait-left-btn" class="control-button text-2xl">◀</button>
-        <button id="portrait-right-btn" class="control-button text-2xl">►</button>
-    </div>
 
-    <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
-        <div>Uang: <span id="moneyDisplay"></span></div>
-        <div>Populasi: <span id="populationDisplay"></span></div>
-    </div>
-    
-    <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
-        <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay"></span>%</label>
-        <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
-    </div>
-
-    <div class="mt-4 w-full flex flex-col items-center">
-        <!-- New popup menu container -->
         <div class="relative w-full flex justify-center">
-            <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
-                <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
-                <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
-                <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
-                <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
-                <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
-                <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
+            <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
+            <div id="infoBox" class="info-box opacity-0 hidden"></div>
+            
+            <div id="landscape-controls">
+                <div></div>
+                <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
+                <div></div>
+                <button id="landscape-left-btn" class="control-button text-2xl">◀</button>
+                <div></div>
+                <button id="landscape-right-btn" class="control-button text-2xl">►</button>
+                <div></div>
+                <button id="landscape-down-btn" class="control-button text-2xl">▼</button>
+                <div></div>
             </div>
         </div>
-        <!-- Trigger buttons -->
-        <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
-            <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
-                Mode Pindah
-            </button>
-            <button id="destroyModeButton" class="action-button bg-red-500 hover:bg-red-600 transition-colors">
-                Hancurkan
-            </button>
-            <button id="buildMenuButton" class="action-button bg-gray-600 hover:bg-gray-700 transition-colors">
-                Bangun
-            </button>
-            <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
-            <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
+        
+        <div id="portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
+            <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
+            <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
+            <button id="portrait-left-btn" class="control-button text-2xl">◀</button>
+            <button id="portrait-right-btn" class="control-button text-2xl">►</button>
         </div>
+
+        <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
+            <div>Uang: <span id="moneyDisplay"></span></div>
+            <div>Populasi: <span id="populationDisplay"></span></div>
+        </div>
+        
+        <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
+            <label for="taxRateSlider" class="block text-center font-bold">Tingkat Pajak: <span id="taxRateDisplay"></span>%</label>
+            <input type="range" id="taxRateSlider" min="0" max="50" value="5" class="w-full mt-1 accent-blue-500" />
+        </div>
+
+        <div class="mt-4 w-full flex flex-col items-center">
+            <div class="relative w-full flex justify-center">
+                <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
+                    <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
+                    <button id="parkButton" class="action-button" style="background-color: #22c55e;">Bangun Taman</button>
+                    <button id="storeButton" class="action-button" style="background-color: #f59e0b;">Bangun Toko</button>
+                    <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
+                    <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
+                    <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
+                </div>
+            </div>
+            <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
+                <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
+                    Mode Pindah
+                </button>
+                <button id="destroyModeButton" class="action-button bg-red-500 hover:bg-red-600 transition-colors">
+                    Hancurkan
+                </button>
+                <button id="buildMenuButton" class="action-button bg-gray-600 hover:bg-gray-700 transition-colors">
+                    Bangun
+                </button>
+                <button id="guideButton" class="action-button bg-gray-400 hover:bg-gray-500">Panduan</button>
+                <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -278,7 +277,6 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Player speed is significantly reduced to 1.5 for a slower feel
     let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.5, color: '#ef4444' };
     let activeMode = 'move';
     let buildingType = null;
@@ -295,26 +293,23 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
-    // Building data with updated income and maintenance values
     const buildingStats = {
         house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10 },
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
-        // New hospital building data with adjusted maintenance to be <70% of income
         hospital: {
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 120, // Adjusted to be less than 70% of tax income
+            maintenance: 30,
             baseTaxIncome: 200,
             patientCapacity: 500,
-            influenceRadius: 10 // Radius dalam blok
+            influenceRadius: 10
         }
     };
     
-    // DOM elements
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const moneyDisplay = document.getElementById('moneyDisplay');
@@ -328,21 +323,19 @@
     const moveModeButton = document.getElementById('moveModeButton');
     const destroyModeButton = document.getElementById('destroyModeButton');
 
-    // UI Buttons (get only building buttons from inside the popup)
     const buildingButtons = {
         house: document.getElementById('houseButton'),
         park: document.getElementById('parkButton'),
         store: document.getElementById('storeButton'),
         industrial: document.getElementById('industrialButton'),
         road: document.getElementById('roadButton'),
-        hospital: document.getElementById('hospitalButton'), // New hospital button
+        hospital: document.getElementById('hospitalButton'),
     };
     
     const guideButton = document.getElementById('guideButton');
     const restartButton = document.getElementById('restartButton');
     const modalCloseButton = document.getElementById('modalCloseButton');
 
-    // Separate mobile controls for landscape and portrait
     const landscapeControls = {
         up: document.getElementById('landscape-up-btn'),
         down: document.getElementById('landscape-down-btn'),
@@ -357,7 +350,6 @@
         right: document.getElementById('portrait-right-btn')
     };
     
-    // Helper Functions
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -396,7 +388,6 @@
                 const distanceY = Math.abs(building.y - b.y);
                 const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
                 
-                // Use the specific influence radius if it exists, otherwise use the default
                 const influenceRadius = buildingStats[b.type].influenceRadius || influenceRadiusInBlocks;
                 
                 return b.id !== building.id && distanceInBlocks <= influenceRadius;
@@ -404,9 +395,9 @@
 
             if (building.type === 'house') {
                 const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
-                const nearbyHospitals = nearbyBuildings.filter(b => b.type === 'hospital').length; // Check for hospitals
+                const nearbyHospitals = nearbyBuildings.filter(b => b.type === 'hospital').length;
                 
-                let happinessBonus = (nearbyParks * 15) + (nearbyHospitals * 20); // Add hospital bonus
+                let happinessBonus = (nearbyParks * 15) + (nearbyHospitals * 20);
                 if (isConnected) happinessBonus += 30;
                 let taxPenalty = taxRate > 10 ? (taxRate - 10) * 2 : 0;
                 happinessBonus -= taxPenalty;
@@ -421,10 +412,7 @@
         });
     }
 
-    // Main Game Loop - Update logic and draw in one loop
     function gameLoop() {
-        // --- Update Game Logic
-        // Player movement
         if (activeMode === 'move') {
             let moveX = 0, moveY = 0;
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
@@ -448,7 +436,6 @@
             player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
         }
 
-        // Update money (income and expenses logic)
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
             let totalExpenditure = 0;
@@ -473,16 +460,12 @@
             lastIncomeTime = Date.now();
         }
 
-        // Update display
         moneyDisplay.textContent = formatRupiah(money);
         populationDisplay.textContent = population;
 
-        // --- Draw to Canvas
-        // Clear canvas
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Draw grid
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
@@ -502,7 +485,6 @@
             ctx.stroke();
         }
 
-        // Draw buildings
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
@@ -515,13 +497,11 @@
             }
         });
 
-        // Draw player
         const playerScreenX = player.x - mapOffset.x;
         const playerScreenY = player.y - mapOffset.y;
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
 
-        // Update info box
         const playerTileX = Math.floor(player.x / gridSize);
         const playerTileY = Math.floor(player.y / gridSize);
         const buildingFound = findBuilding(playerTileX, playerTileY);
@@ -535,21 +515,18 @@
                 infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
                 infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
                 const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
-                infoText += `<p>Pendapatan Pajak: ${formatRupiah(taxPerHouse)}/detik</p>`;
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
                 const profitPerBuilding = buildingStats[buildingFound.type].baseIncome * (buildingFound.needs.profitability / 100) * (taxRate / 100);
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
-                infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
                 infoText += `<p>Kapasitas Pasien: ${buildingStats.hospital.patientCapacity}</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(buildingStats.hospital.baseTaxIncome)}/detik</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats.hospital.maintenance)}/detik</p>`;
             }
-            if (buildingStats[buildingFound.type].maintenance) {
-                // This line is a duplicate and will be removed in the next iteration.
-                // For now, it's inside the conditional block, so it won't be shown for all buildings.
-                // We'll fix it by removing it completely.
-                // infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
+            if (buildingStats[buildingFound.type].maintenance && buildingFound.type !== 'hospital') {
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
             }
 
             infoBoxEl.innerHTML = infoText;
@@ -560,11 +537,9 @@
             infoBoxEl.classList.add('opacity-0', 'hidden');
         }
 
-        // Request next animation frame
         requestAnimationFrame(gameLoop);
     }
 
-    // Toggling the pop-up menu
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
         if (isPopupMenuOpen) {
@@ -574,7 +549,6 @@
         }
     }
 
-    // Set Mode function and update button styles
     function setMode(newMode, newType) {
         activeMode = newMode;
         if (newType) {
@@ -625,9 +599,7 @@
         updateButtonStyles();
     }
 
-    // Initial setup function
     function init() {
-        // Add all event listeners
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -637,14 +609,13 @@
             else if (e.key.toLowerCase() === 'i') setMode('build', 'industrial');
             else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
             else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
-            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital'); // New shortcut for hospital
+            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital');
         });
 
         window.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Event listeners for the separate mobile controls
         const allMobileButtons = [
             landscapeControls.up, landscapeControls.down, landscapeControls.left, landscapeControls.right,
             portraitControls.up, portraitControls.down, portraitControls.left, portraitControls.right
@@ -722,10 +693,7 @@
             calculateNeeds();
         });
 
-        // Event listener for the new popup button
         buildMenuButton.addEventListener('click', togglePopupMenu);
-
-        // Event listeners for external buttons
         moveModeButton.addEventListener('click', () => setMode('move', null));
         destroyModeButton.addEventListener('click', () => setMode('destroy', null));
         restartButton.addEventListener('click', restartGame);
@@ -735,13 +703,11 @@
             if (event.target === modal) {
                 modal.classList.remove('modal-show');
             }
-            // Close the popup menu if a click happens outside of it and its trigger button
             if (isPopupMenuOpen && !popupMenu.contains(event.target) && !buildMenuButton.contains(event.target)) {
                 togglePopupMenu();
             }
         });
         
-        // Event listeners for the buttons inside the popup
         for (const type in buildingButtons) {
             buildingButtons[type].addEventListener('click', () => setMode('build', type));
         }
@@ -756,7 +722,6 @@
 
         restartGame();
 
-        // Interval for population and needs updates
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
@@ -783,7 +748,6 @@
         }, 5000);
         setInterval(calculateNeeds, 2000);
 
-        // Start main game loop
         gameLoop();
     }
 
