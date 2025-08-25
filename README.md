@@ -277,8 +277,8 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Mengurangi kecepatan pemain agar gerakan lebih lambat dan halus
-    let player = { x: 0, y: 0, width: 28, height: 28, speed: 0.5, color: '#ef4444' }; 
+    // Meningkatkan kecepatan pemain dari 0.5 menjadi 1.0 agar lebih responsif
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.0, color: '#ef4444' }; 
     let activeMode = 'move';
     let buildingType = null;
     let taxRate = 5;
@@ -679,7 +679,7 @@
         population = 0;
         buildings = [];
         mapOffset = { x: 0, y: 0 };
-        player = { x: 0, y: 0, width: 28, height: 28, speed: 0.5, color: '#ef4444' };
+        player = { x: 0, y: 0, width: 28, height: 28, speed: 1.0, color: '#ef4444' };
         activeMode = 'move';
         buildingType = null;
         taxRate = 5;
