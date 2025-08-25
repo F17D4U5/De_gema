@@ -350,6 +350,7 @@
         right: document.getElementById('portrait-right-btn')
     };
     
+    // Fungsi untuk format uang ke Rupiah
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -359,12 +360,14 @@
         }).format(amount);
     }
 
+    // Fungsi untuk menemukan bangunan di petak tertentu
     function findBuilding(tileX, tileY) {
         return buildings.find(b =>
             Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
         );
     }
     
+    // Fungsi untuk memeriksa koneksi ke jalan
     function isConnectedToRoad(tileX, tileY) {
         const adjacentTiles = [
             { x: tileX, y: tileY - 1 },
@@ -378,6 +381,7 @@
         });
     }
 
+    // Fungsi untuk menghitung kebutuhan dan bonus bangunan
     function calculateNeeds() {
         const influentialBuildings = buildings.filter(b => buildingStats[b.type].influenceRadius);
 
@@ -512,6 +516,9 @@
             // Logika baru untuk menggambar bentuk bangunan
             if (building.type === 'house') {
                 drawHouse(drawX, drawY, gridSize, gridSize, building.color);
+            } else if (building.type === 'park') {
+                // Perbaikan: Meneruskan array posisi bunga yang disimpan
+                drawPark(drawX, drawY, gridSize, gridSize, building.color, building.flowerPositions);
             } else if (building.type === 'road') {
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
             } else {
@@ -606,6 +613,39 @@
         ctx.fillRect(x + width * 0.65, y + height * 0.5, width * 0.2, height * 0.2);
     }
     
+    /**
+     * @param {number} x - Posisi X di canvas.
+     * @param {number} y - Posisi Y di canvas.
+     * @param {number} width - Lebar taman.
+     * @param {number} height - Tinggi taman.
+     * @param {string} color - Warna taman.
+     * @param {Array<Object>} flowerPositions - Array posisi bunga statis.
+     */
+    function drawPark(x, y, width, height, color, flowerPositions) {
+        // Menggambar latar belakang rumput
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, width, height);
+
+        // Menggambar bunga-bunga kecil secara statis
+        const flowerColors = ['#f59e0b', '#ef4444', '#60a5fa', '#fde047'];
+        
+        flowerPositions.forEach(pos => {
+            const flowerX = x + pos.x;
+            const flowerY = y + pos.y;
+            const flowerColor = flowerColors[pos.colorIndex];
+            const flowerRadius = 2;
+
+            ctx.fillStyle = flowerColor;
+            ctx.beginPath();
+            ctx.arc(flowerX, flowerY, flowerRadius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Menggambar bangku taman
+        ctx.fillStyle = '#94a3b8'; // Abu-abu
+        ctx.fillRect(x + width * 0.4, y + height * 0.8, width * 0.2, height * 0.1);
+    }
+
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
         if (isPopupMenuOpen) {
@@ -729,6 +769,22 @@
                         currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
                         needs: { happiness: 0, profitability: 0 }
                     };
+                    
+                    // Logika baru untuk taman: generate posisi bunga statis
+                    if (buildingType === 'park') {
+                        const flowerPositions = [];
+                        const numFlowers = 15;
+                        const flowerColors = ['#f59e0b', '#ef4444', '#60a5fa', '#fde047'];
+                        for (let i = 0; i < numFlowers; i++) {
+                            flowerPositions.push({
+                                x: Math.random() * gridSize,
+                                y: Math.random() * gridSize,
+                                colorIndex: Math.floor(Math.random() * flowerColors.length)
+                            });
+                        }
+                        newBuilding.flowerPositions = flowerPositions;
+                    }
+
                     buildings.push(newBuilding);
                     money -= cost;
                     calculateNeeds();
