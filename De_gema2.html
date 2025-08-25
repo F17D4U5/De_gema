@@ -302,12 +302,12 @@
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
-        // New hospital building data with adjusted maintenance to be <70% of income
+        // New hospital building data with adjusted maintenance to be <70% of tax income
         hospital: {
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 120, // Adjusted to be less than 70% of tax income
+            maintenance: 30, // Adjusted to be more profitable
             baseTaxIncome: 200,
             patientCapacity: 500,
             influenceRadius: 10 // Radius dalam blok
