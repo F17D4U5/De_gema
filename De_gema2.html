@@ -11,16 +11,17 @@
             margin: 0;
             background-color: #f3f4f6;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
+            justify-content: flex-start;
             align-items: center;
             min-height: 100vh;
             padding: 1rem;
-            overflow: hidden; /* Prevent body scrolling */
+            /* Perbaikan: Hapus 'overflow: hidden;' agar halaman bisa digulir */
         }
         canvas {
             border-radius: 0.5rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            touch-action: none; /* Prevents scrolling when touching the canvas */
+            touch-action: none; /* Mencegah scrolling saat berinteraksi dengan canvas */
             width: 100%;
             height: auto;
             max-width: 800px;
@@ -40,7 +41,7 @@
             z-index: 10;
         }
         .control-button {
-            background-color: rgba(209, 213, 219, 0.7); /* Semi-transparent background */
+            background-color: rgba(209, 213, 219, 0.7); /* Latar belakang semi-transparan */
             color: #4b5563;
             border-radius: 0.5rem;
             display: flex;
@@ -49,7 +50,7 @@
             font-weight: bold;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.1s ease-in-out;
-            backdrop-filter: blur(2px); /* Optional blur effect */
+            backdrop-filter: blur(2px); /* Efek blur opsional */
             width: 50px;
             height: 50px;
         }
@@ -139,11 +140,11 @@
             opacity: 1;
         }
 
-        /* --- Separate controls for each orientation --- */
+        /* --- Kontrol terpisah untuk setiap orientasi --- */
 
-        /* Landscape orientation controls */
+        /* Kontrol orientasi lanskap */
         #landscape-controls {
-            display: none; /* Hidden by default */
+            display: none; /* Tersembunyi secara default */
             position: absolute;
             bottom: 1rem;
             right: 1rem;
@@ -154,16 +155,16 @@
             gap: 0.5rem;
             z-index: 20;
         }
-        /* Only show on small screens in landscape mode */
+        /* Hanya tampilkan pada layar kecil dalam mode lanskap */
         @media (max-width: 768px) and (orientation: landscape) {
             #landscape-controls {
                 display: grid;
             }
         }
         
-        /* Portrait orientation controls */
+        /* Kontrol orientasi potret */
         #portrait-controls {
-            display: none; /* Hidden by default */
+            display: none; /* Tersembunyi secara default */
             flex-direction: row;
             justify-content: center;
             gap: 4px;
@@ -171,7 +172,7 @@
             width: 100%;
             z-index: 20;
         }
-        /* Only show on small screens in portrait mode */
+        /* Hanya tampilkan pada layar kecil dalam mode potret */
         @media (max-width: 768px) and (orientation: portrait) {
             #portrait-controls {
                 display: flex;
@@ -187,12 +188,12 @@
         <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
     </div>
 
-    <!-- Main game container with relative positioning for controls -->
+    <!-- Kontainer game utama dengan penentuan posisi relatif untuk kontrol -->
     <div class="relative w-full flex justify-center">
         <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
         <div id="infoBox" class="info-box opacity-0 hidden"></div>
         
-        <!-- Landscape Floating Controls (Grid) -->
+        <!-- Kontrol Lanskap Mengambang (Grid) -->
         <div id="landscape-controls">
             <div></div>
             <button id="landscape-up-btn" class="control-button text-2xl">▲</button>
@@ -206,7 +207,7 @@
         </div>
     </div>
     
-    <!-- Portrait Controls (Flex row at the bottom) -->
+    <!-- Kontrol Potret (Baris fleksibel di bawah) -->
     <div id="portrait-controls" class="flex flex-row justify-center gap-4 mt-4 w-full">
         <button id="portrait-up-btn" class="control-button text-2xl">▲</button>
         <button id="portrait-down-btn" class="control-button text-2xl">▼</button>
@@ -225,7 +226,7 @@
     </div>
 
     <div class="mt-4 w-full flex flex-col items-center">
-        <!-- New popup menu container -->
+        <!-- Kontainer menu pop-up baru -->
         <div class="relative w-full flex justify-center">
             <div id="popupMenu" class="popup-menu grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 w-full max-w-md">
                 <button id="houseButton" class="action-button" style="background-color: #fde047;">Bangun Rumah</button>
@@ -236,7 +237,7 @@
                 <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
             </div>
         </div>
-        <!-- Trigger buttons -->
+        <!-- Tombol pemicu -->
         <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
             <button id="moveModeButton" class="action-button bg-blue-500 hover:bg-blue-600 transition-colors">
                 Mode Pindah
@@ -307,7 +308,7 @@
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 30, // Adjusted to be more profitable
+            maintenance: 30, // Disesuaikan agar lebih menguntungkan
             baseTaxIncome: 200,
             patientCapacity: 500,
             influenceRadius: 10 // Radius dalam blok
@@ -396,7 +397,7 @@
                 const distanceY = Math.abs(building.y - b.y);
                 const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
                 
-                // Use the specific influence radius if it exists, otherwise use the default
+                // Gunakan radius pengaruh spesifik jika ada, jika tidak gunakan default
                 const influenceRadius = buildingStats[b.type].influenceRadius || influenceRadiusInBlocks;
                 
                 return b.id !== building.id && distanceInBlocks <= influenceRadius;
@@ -404,9 +405,9 @@
 
             if (building.type === 'house') {
                 const nearbyParks = nearbyBuildings.filter(b => b.type === 'park').length;
-                const nearbyHospitals = nearbyBuildings.filter(b => b.type === 'hospital').length; // Check for hospitals
+                const nearbyHospitals = nearbyBuildings.filter(b => b.type === 'hospital').length; // Cek rumah sakit
                 
-                let happinessBonus = (nearbyParks * 15) + (nearbyHospitals * 20); // Add hospital bonus
+                let happinessBonus = (nearbyParks * 15) + (nearbyHospitals * 20); // Tambahkan bonus rumah sakit
                 if (isConnected) happinessBonus += 30;
                 let taxPenalty = taxRate > 10 ? (taxRate - 10) * 2 : 0;
                 happinessBonus -= taxPenalty;
@@ -624,7 +625,7 @@
 
     // Initial setup function
     function init() {
-        // Add all event listeners
+        // Tambahkan semua event listener
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -634,14 +635,14 @@
             else if (e.key.toLowerCase() === 'i') setMode('build', 'industrial');
             else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
             else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
-            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital'); // New shortcut for hospital
+            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital'); // Shortcut baru untuk rumah sakit
         });
 
         window.addEventListener('keyup', (e) => {
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Event listeners for the separate mobile controls
+        // Event listener untuk kontrol seluler yang terpisah
         const allMobileButtons = [
             landscapeControls.up, landscapeControls.down, landscapeControls.left, landscapeControls.right,
             portraitControls.up, portraitControls.down, portraitControls.left, portraitControls.right
@@ -719,10 +720,10 @@
             calculateNeeds();
         });
 
-        // Event listener for the new popup button
+        // Event listener untuk tombol pop-up baru
         buildMenuButton.addEventListener('click', togglePopupMenu);
 
-        // Event listeners for external buttons
+        // Event listener untuk tombol eksternal
         moveModeButton.addEventListener('click', () => setMode('move', null));
         destroyModeButton.addEventListener('click', () => setMode('destroy', null));
         restartButton.addEventListener('click', restartGame);
@@ -732,13 +733,13 @@
             if (event.target === modal) {
                 modal.classList.remove('modal-show');
             }
-            // Close the popup menu if a click happens outside of it and its trigger button
+            // Tutup menu pop-up jika terjadi klik di luar menu dan tombol pemicunya
             if (isPopupMenuOpen && !popupMenu.contains(event.target) && !buildMenuButton.contains(event.target)) {
                 togglePopupMenu();
             }
         });
         
-        // Event listeners for the buttons inside the popup
+        // Event listener untuk tombol-tombol di dalam pop-up
         for (const type in buildingButtons) {
             buildingButtons[type].addEventListener('click', () => setMode('build', type));
         }
@@ -753,7 +754,7 @@
 
         restartGame();
 
-        // Interval for population and needs updates
+        // Interval untuk pembaruan populasi dan kebutuhan
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
@@ -780,7 +781,7 @@
         }, 5000);
         setInterval(calculateNeeds, 2000);
 
-        // Start main game loop
+        // Mulai game loop utama
         gameLoop();
     }
 
