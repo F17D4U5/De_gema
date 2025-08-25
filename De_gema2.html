@@ -303,9 +303,10 @@
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 30, // Biaya tetap per detik
-            baseTaxIncome: 100, // Pendapatan pajak dasar, diskalakan dengan taxRate
-            influenceRadius: 10
+            maintenance: 30,
+            patientCapacity: 10, // New property for patient capacity
+            treatmentCost: 5, // New property for treatment cost
+            influenceRadius: 10 // Used for happiness calculation only
         }
     };
     
@@ -455,17 +456,16 @@
             buildings.forEach(b => {
                 const stats = buildingStats[b.type];
                 
-                // Menghitung pendapatan berdasarkan jenis bangunan
                 if (b.type === 'house') {
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     totalIncome += stats.baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 } else if (b.type === 'hospital') {
-                    // FIX BUG #1: Pendapatan rumah sakit sekarang dihitung berdasarkan tingkat pajak
-                    totalIncome += stats.baseTaxIncome * (taxRate / 100);
+                    // FIX BUG #2: Implementasi formula baru untuk pendapatan rumah sakit
+                    totalIncome += b.currentPatients * stats.treatmentCost * (taxRate / 100);
                 }
                 
-                // FIX BUG #2: Biaya perawatan/pemeliharaan dihitung terpisah sebagai pengeluaran
+                // Biaya pemeliharaan adalah pengeluaran terpisah
                 if (stats.maintenance) {
                     totalExpenditure += stats.maintenance;
                 }
@@ -537,12 +537,15 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                // FIX BUG #1 (DISPLAY): Menampilkan pendapatan dan biaya rumah sakit secara terpisah
-                const hospitalIncome = stats.baseTaxIncome * (taxRate / 100);
+                // FIX BUG #1: Menampilkan kapasitas pasien, bukan radius pengaruh
+                infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
+                infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
+                
+                // FIX BUG #1 & #2: Menampilkan pajak bangunan dan biaya perawatan secara terpisah
+                const hospitalTax = buildingFound.currentPatients * stats.treatmentCost * (taxRate / 100);
                 const hospitalMaintenance = stats.maintenance;
-                infoText += `<p>Pendapatan Pajak: ${formatRupiah(hospitalIncome)}/detik</p>`;
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(hospitalTax)}/detik</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(hospitalMaintenance)}/detik</p>`;
-                infoText += `<p>Radius Pengaruh: ${stats.influenceRadius} blok</p>`;
             }
             if (stats.maintenance && buildingFound.type !== 'hospital') {
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
@@ -675,6 +678,7 @@
                     const newBuilding = {
                         id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
                         population: stats.population || 0, 
+                        currentPatients: buildingType === 'hospital' ? 0 : null, // Initialize currentPatients for hospital
                         needs: { happiness: 0, profitability: 0 }
                     };
                     buildings.push(newBuilding);
@@ -761,6 +765,17 @@
                 if (b.type === 'house') totalPopulation += b.population;
             });
             population = totalPopulation;
+
+            // FIX BUG #2: Logic to dynamically change the number of patients
+            buildings.filter(b => b.type === 'hospital').forEach(hospital => {
+                const stats = buildingStats.hospital;
+                // Randomly add or remove patients
+                const change = Math.random() < 0.5 ? -1 : 1;
+                let newPatients = hospital.currentPatients + change;
+                // Clamp the number of patients to be within the capacity and not negative
+                hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, newPatients));
+            });
+
         }, 5000);
         setInterval(calculateNeeds, 2000);
 
