@@ -277,7 +277,8 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.5, color: '#ef4444' };
+    // Mengurangi kecepatan pemain agar gerakan lebih lambat dan halus
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 0.5, color: '#ef4444' }; 
     let activeMode = 'move';
     let buildingType = null;
     let taxRate = 5;
@@ -450,7 +451,7 @@
             player.y += moveY;
             const worldSize = 5000;
             player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
-            player.y = Math.max(0, Math.min(worldSize - player.height, player.y));
+            player.y = Math.min(Math.max(0, player.y), worldSize - player.height);
         }
 
         if (Date.now() - lastIncomeTime > incomeInterval) {
@@ -490,6 +491,8 @@
         ctx.lineWidth = 1;
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
         const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
+        
+        // Draw vertical lines
         for (let x = 0; x < screenGridSizeX; x++) {
             const drawX = (x * gridSize) - (mapOffset.x % gridSize);
             ctx.beginPath();
@@ -497,11 +500,13 @@
             ctx.lineTo(drawX, canvas.height);
             ctx.stroke();
         }
+        
+        // Draw horizontal lines
         for (let y = 0; y < screenGridSizeY; y++) {
             const drawY = (y * gridSize) - (mapOffset.y % gridSize);
             ctx.beginPath();
             ctx.moveTo(0, drawY);
-            ctx.lineTo(canvas.width, drawY);
+            ctx.lineTo(canvas.width, drawY); 
             ctx.stroke();
         }
         
@@ -517,8 +522,7 @@
             if (building.type === 'house') {
                 drawHouse(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
-                // Perbaikan: Meneruskan array posisi bunga yang disimpan
-                drawPark(drawX, drawY, gridSize, gridSize, building.color, building.flowerPositions);
+                drawPark(drawX, drawY, gridSize, gridSize);
             } else if (building.type === 'road') {
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
             } else {
@@ -612,39 +616,19 @@
         ctx.fillRect(x + width * 0.15, y + height * 0.5, width * 0.2, height * 0.2);
         ctx.fillRect(x + width * 0.65, y + height * 0.5, width * 0.2, height * 0.2);
     }
-    
+
     /**
+     * Menggambar taman sebagai kotak hijau sederhana.
      * @param {number} x - Posisi X di canvas.
      * @param {number} y - Posisi Y di canvas.
      * @param {number} width - Lebar taman.
      * @param {number} height - Tinggi taman.
-     * @param {string} color - Warna taman.
-     * @param {Array<Object>} flowerPositions - Array posisi bunga statis.
      */
-    function drawPark(x, y, width, height, color, flowerPositions) {
-        // Menggambar latar belakang rumput
-        ctx.fillStyle = color;
+    function drawPark(x, y, width, height) {
+        ctx.fillStyle = '#22c55e'; 
         ctx.fillRect(x, y, width, height);
-
-        // Menggambar bunga-bunga kecil secara statis
-        const flowerColors = ['#f59e0b', '#ef4444', '#60a5fa', '#fde047'];
-        
-        flowerPositions.forEach(pos => {
-            const flowerX = x + pos.x;
-            const flowerY = y + pos.y;
-            const flowerColor = flowerColors[pos.colorIndex];
-            const flowerRadius = 2;
-
-            ctx.fillStyle = flowerColor;
-            ctx.beginPath();
-            ctx.arc(flowerX, flowerY, flowerRadius, 0, Math.PI * 2);
-            ctx.fill();
-        });
-
-        // Menggambar bangku taman
-        ctx.fillStyle = '#94a3b8'; // Abu-abu
-        ctx.fillRect(x + width * 0.4, y + height * 0.8, width * 0.2, height * 0.1);
     }
+
 
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
@@ -695,7 +679,7 @@
         population = 0;
         buildings = [];
         mapOffset = { x: 0, y: 0 };
-        player = { x: 0, y: 0, width: 28, height: 28, speed: 1.5, color: '#ef4444' };
+        player = { x: 0, y: 0, width: 28, height: 28, speed: 0.5, color: '#ef4444' };
         activeMode = 'move';
         buildingType = null;
         taxRate = 5;
@@ -770,21 +754,6 @@
                         needs: { happiness: 0, profitability: 0 }
                     };
                     
-                    // Logika baru untuk taman: generate posisi bunga statis
-                    if (buildingType === 'park') {
-                        const flowerPositions = [];
-                        const numFlowers = 15;
-                        const flowerColors = ['#f59e0b', '#ef4444', '#60a5fa', '#fde047'];
-                        for (let i = 0; i < numFlowers; i++) {
-                            flowerPositions.push({
-                                x: Math.random() * gridSize,
-                                y: Math.random() * gridSize,
-                                colorIndex: Math.floor(Math.random() * flowerColors.length)
-                            });
-                        }
-                        newBuilding.flowerPositions = flowerPositions;
-                    }
-
                     buildings.push(newBuilding);
                     money -= cost;
                     calculateNeeds();
