@@ -299,14 +299,15 @@
         store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
         industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
+        // Perbaikan: Nilai-nilai rumah sakit yang telah diperbarui
         hospital: {
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 30,
-            patientCapacity: 10, // New property for patient capacity
-            treatmentCost: 5, // New property for treatment cost
-            influenceRadius: 10 // Used for happiness calculation only
+            maintenance: 30, 
+            patientCapacity: 100, // KAPASITAS DITINGKATKAN DARI 10 KE 100
+            treatmentCost: 10, // BIAYA PENGOBATAN PER ORANG DITINGKATKAN DARI 2.5 KE 10
+            influenceRadius: 10 
         }
     };
     
@@ -461,7 +462,7 @@
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     totalIncome += stats.baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 } else if (b.type === 'hospital') {
-                    // FIX BUG #2: Implementasi formula baru untuk pendapatan rumah sakit
+                    // Implementasi formula baru untuk pendapatan rumah sakit
                     totalIncome += b.currentPatients * stats.treatmentCost * (taxRate / 100);
                 }
                 
@@ -537,15 +538,16 @@
                 infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                // FIX BUG #1: Menampilkan kapasitas pasien, bukan radius pengaruh
+                // Perbaikan: Tampilan info box yang telah diperbarui
+                const hospitalTax = buildingFound.currentPatients * stats.treatmentCost;
+                const hospitalMaintenance = stats.maintenance;
+                const netIncome = (hospitalTax * (taxRate / 100)) - hospitalMaintenance;
+                
                 infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
                 infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
-                
-                // FIX BUG #1 & #2: Menampilkan pajak bangunan dan biaya perawatan secara terpisah
-                const hospitalTax = buildingFound.currentPatients * stats.treatmentCost * (taxRate / 100);
-                const hospitalMaintenance = stats.maintenance;
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(hospitalTax)}/detik</p>`;
+                infoText += `<p>Pajak Pengobatan: ${formatRupiah(hospitalTax * (taxRate / 100))}/detik</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(hospitalMaintenance)}/detik</p>`;
+                infoText += `<p><strong>Keuntungan Bersih: ${formatRupiah(netIncome)}/detik</strong></p>`;
             }
             if (stats.maintenance && buildingFound.type !== 'hospital') {
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
@@ -676,9 +678,13 @@
                 const cost = stats.cost;
                 if (!existingBuilding && money >= cost) {
                     const newBuilding = {
-                        id: Date.now(), x: tileX * gridSize, y: tileY * gridSize, type: buildingType, color: stats.color,
+                        id: Date.now(), 
+                        x: tileX * gridSize, 
+                        y: tileY * gridSize, 
+                        type: buildingType, 
+                        color: stats.color,
                         population: stats.population || 0, 
-                        currentPatients: buildingType === 'hospital' ? 0 : null, // Initialize currentPatients for hospital
+                        currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
                         needs: { happiness: 0, profitability: 0 }
                     };
                     buildings.push(newBuilding);
@@ -766,14 +772,27 @@
             });
             population = totalPopulation;
 
-            // FIX BUG #2: Logic to dynamically change the number of patients
+            // Perbaikan: Logika untuk mengubah jumlah pasien secara dinamis, tergantung pada populasi kota
             buildings.filter(b => b.type === 'hospital').forEach(hospital => {
                 const stats = buildingStats.hospital;
-                // Randomly add or remove patients
-                const change = Math.random() < 0.5 ? -1 : 1;
+                // Jika tidak ada populasi, tidak ada pasien
+                if (population === 0) {
+                    hospital.currentPatients = 0;
+                    return;
+                }
+                
+                // Mengubah jumlah pasien secara acak, terbatas pada populasi dan kapasitas
+                let change = 0;
+                if (Math.random() < 0.5) {
+                    change = 1;
+                } else {
+                    change = -1;
+                }
+                
                 let newPatients = hospital.currentPatients + change;
-                // Clamp the number of patients to be within the capacity and not negative
-                hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, newPatients));
+                
+                // Memastikan jumlah pasien tidak negatif atau melebihi populasi atau kapasitas
+                hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, Math.min(population, newPatients)));
             });
 
         }, 5000);
