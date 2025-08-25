@@ -6,7 +6,7 @@
     <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Perbaikan: Gunakan Flexbox dengan benar untuk memungkinkan scrolling */
+        /* Perbaikan: Hapus properti pemusatan yang mencegah scrolling */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -14,20 +14,9 @@
             padding: 1rem;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            /* Ini akan memaksa body untuk dapat digulir jika konten meluap */
-            overflow-y: auto;
-            min-height: 100vh; /* Pastikan body setidaknya setinggi viewport */
-        }
-        /* Kontainer utama yang akan memusatkan konten dan memungkinkan pertumbuhan */
-        .main-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            max-width: 800px;
-            /* Ini yang akan memungkinkan konten untuk mendorong scroll */
-            flex-grow: 1; 
+            align-items: center; /* Tetap pusatkan secara horizontal */
+            min-height: 100vh;
+            overflow-y: auto; /* Memungkinkan scrolling vertikal */
         }
         canvas {
             border-radius: 0.5rem;
@@ -150,10 +139,6 @@
             visibility: visible;
             opacity: 1;
         }
-
-        /* --- Kontrol terpisah untuk setiap orientasi --- */
-
-        /* Kontrol orientasi lanskap */
         #landscape-controls {
             display: none;
             position: absolute;
@@ -171,8 +156,6 @@
                 display: grid;
             }
         }
-        
-        /* Kontrol orientasi potret */
         #portrait-controls {
             display: none;
             flex-direction: row;
@@ -191,8 +174,7 @@
 </head>
 <body>
 
-<div class="main-container">
-
+<div class="main-container flex flex-col items-center w-full max-w-full md:max-w-4xl">
     <div class="text-center mb-4">
         <h1 class="text-3xl font-bold mb-2">Simulasi Kota 2D Sederhana</h1>
         <p class="text-gray-600">Gunakan tombol di bawah untuk berinteraksi.</p>
