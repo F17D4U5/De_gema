@@ -542,13 +542,14 @@
                 infoText += `<p>Keuntungan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
                 infoText += `<p>Kapasitas Pasien: ${buildingStats.hospital.patientCapacity}</p>`;
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(buildingStats.hospital.baseTaxIncome)}/detik</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats.hospital.maintenance)}/detik</p>`;
-                const hospitalTaxIncome = buildingStats.hospital.baseTaxIncome * (taxRate / 100);
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(hospitalTaxIncome)}/detik</p>`;
-                infoText += `<p>Radius Jangkauan: ${buildingStats.hospital.influenceRadius} blok</p>`;
             }
             if (buildingStats[buildingFound.type].maintenance) {
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
+                // This line is a duplicate and will be removed in the next iteration.
+                // For now, it's inside the conditional block, so it won't be shown for all buildings.
+                // We'll fix it by removing it completely.
+                // infoText += `<p>Biaya Perawatan: ${formatRupiah(buildingStats[buildingFound.type].maintenance)}/detik</p>`;
             }
 
             infoBoxEl.innerHTML = infoText;
