@@ -14,9 +14,8 @@
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
-            min-height: 100vh;
+            /* Perbaikan: Hapus 'min-height: 100vh;' agar halaman dapat digulir */
             padding: 1rem;
-            /* Perbaikan: Hapus 'overflow: hidden;' agar halaman bisa digulir */
         }
         canvas {
             border-radius: 0.5rem;
@@ -180,7 +179,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 flex flex-col items-center justify-center p-4">
 
 <div class="flex flex-col items-center w-full max-w-4xl">
     <div class="text-center mb-4">
