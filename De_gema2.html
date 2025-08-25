@@ -304,8 +304,8 @@
             name: 'Rumah Sakit',
             color: '#7b241c',
             maintenance: 30, // Biaya tetap per detik
-            patientCapacity: 10, // Kapasitas pasien
-            treatmentCost: 5, // Biaya pengobatan per orang
+            patientCapacity: 100, // Perbaikan: Meningkatkan kapasitas rumah sakit
+            treatmentCost: 10, // Perbaikan: Meningkatkan biaya pengobatan per orang
             influenceRadius: 10 // Digunakan hanya untuk perhitungan kebahagiaan
         }
     };
@@ -461,7 +461,7 @@
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     totalIncome += stats.baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
                 } else if (b.type === 'hospital') {
-                    // FIX BUG #2: Implementasi formula baru untuk pendapatan rumah sakit
+                    // Implementasi formula baru untuk pendapatan rumah sakit
                     totalIncome += b.currentPatients * stats.treatmentCost * (taxRate / 100);
                 }
                 
@@ -682,8 +682,8 @@
                         type: buildingType, 
                         color: stats.color,
                         population: stats.population || 0, 
-                        // Perbaikan: Inisialisasi pasien secara acak saat rumah sakit dibangun
-                        currentPatients: buildingType === 'hospital' ? Math.floor(Math.random() * stats.patientCapacity) + 1 : null,
+                        // Perbaikan: Inisialisasi pasien menjadi 0 saat populasi nol
+                        currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
                         needs: { happiness: 0, profitability: 0 }
                     };
                     buildings.push(newBuilding);
@@ -771,14 +771,27 @@
             });
             population = totalPopulation;
 
-            // Logika untuk mengubah jumlah pasien secara dinamis
+            // Perbaikan: Logika untuk mengubah jumlah pasien secara dinamis, tergantung pada populasi kota
             buildings.filter(b => b.type === 'hospital').forEach(hospital => {
                 const stats = buildingStats.hospital;
-                // Mengubah jumlah pasien secara acak
-                const change = Math.random() < 0.5 ? -1 : 1;
+                // Jika tidak ada populasi, tidak ada pasien
+                if (population === 0) {
+                    hospital.currentPatients = 0;
+                    return;
+                }
+                
+                // Mengubah jumlah pasien secara acak, terbatas pada populasi dan kapasitas
+                let change = 0;
+                if (Math.random() < 0.5) {
+                    change = 1;
+                } else {
+                    change = -1;
+                }
+                
                 let newPatients = hospital.currentPatients + change;
-                // Memastikan jumlah pasien tidak negatif atau melebihi kapasitas
-                hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, newPatients));
+                
+                // Memastikan jumlah pasien tidak negatif atau melebihi populasi atau kapasitas
+                hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, Math.min(population, newPatients)));
             });
 
         }, 5000);
