@@ -690,6 +690,7 @@
     }
 
     function init() {
+        // Event listener untuk keyboard
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -706,6 +707,7 @@
             keys[e.key.toLowerCase()] = false;
         });
 
+        // Event listener untuk kontrol sentuh (diperbarui untuk keandalan)
         const allMobileButtons = [
             landscapeControls.up, landscapeControls.down, landscapeControls.left, landscapeControls.right,
             portraitControls.up, portraitControls.down, portraitControls.left, portraitControls.right
@@ -713,21 +715,28 @@
 
         allMobileButtons.forEach(btn => {
             if (btn) {
-                btn.addEventListener('touchstart', (e) => {
+                // Gunakan pointerdown untuk mendeteksi sentuhan atau klik
+                btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     if (e.target.id.includes('up')) touchControls.up = true;
                     if (e.target.id.includes('down')) touchControls.down = true;
                     if (e.target.id.includes('left')) touchControls.left = true;
                     if (e.target.id.includes('right')) touchControls.right = true;
-                });
-                btn.addEventListener('touchend', () => {
-                    touchControls.up = false;
-                    touchControls.down = false;
-                    touchControls.left = false;
-                    touchControls.right = false;
+                    // Mencegah masalah sentuhan "lengket" dengan juga mereset pada pointerup
+                    document.body.addEventListener('pointerup', resetTouchControls);
                 });
             }
         });
+        
+        // Fungsi untuk mereset semua kontrol sentuh. Dipanggil pada 'pointerup'
+        function resetTouchControls() {
+            touchControls.up = false;
+            touchControls.down = false;
+            touchControls.left = false;
+            touchControls.right = false;
+            // Hapus listener agar tidak bocor memori
+            document.body.removeEventListener('pointerup', resetTouchControls);
+        }
 
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
