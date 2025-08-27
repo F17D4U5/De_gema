@@ -298,8 +298,8 @@
 
     // Nilai penghasilan dasar per pekerja, dihitung berdasarkan permintaan pengguna
     // '2,5 per 5% pajak' untuk toko (membutuhkan 3 pekerja)
-    // 2.5 = (baseIncomePerWorker * 3) * (5/100)
-    // baseIncomePerWorker = 2.5 / (3 * 0.05) = 16.67
+    // Formula: 2.5 = (baseIncomePerWorker * 3) * (5/100)
+    // Maka, baseIncomePerWorker = 2.5 / (3 * 0.05) = 16.67
     const baseIncomePerWorker = {
         store: 16.67,
         industrial: 25.00 // Nilai yang lebih tinggi untuk industri
@@ -436,6 +436,7 @@
             if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
             if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
             if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+            // Memperbaiki kesalahan: Mengubah 'touchX.right' menjadi 'touchControls.right'
             if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
             
             const playerScreenX = player.x - mapOffset.x;
@@ -491,6 +492,7 @@
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
                     // Dapatkan pendapatan hanya jika ada pekerja yang ditugaskan
+                    // Logika ini memastikan hanya toko dengan pekerja yang menghasilkan uang
                     if (b.workersAssigned > 0) {
                         const taxGain = (baseIncomePerWorker[b.type] * b.workersAssigned) * (taxRate / 100);
                         totalIncome += taxGain;
@@ -599,6 +601,7 @@
                 infoText += `<p>Pekerja Dibutuhkan: ${buildingFound.workersAssigned || 0}/${stats.workersRequired}</p>`;
                 
                 // Perubahan: Mengganti "Penghasilan Tetap" dengan "Pajak Bangunan"
+                // Formula ini memastikan penghasilan dihitung berdasarkan pekerja yang ditugaskan dan tingkat pajak saat ini
                 const taxGain = (baseIncomePerWorker[buildingFound.type] * (buildingFound.workersAssigned || 0)) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
