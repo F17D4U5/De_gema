@@ -6,7 +6,7 @@
     <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Perbaikan: Wadah fleksibel untuk konten yang dapat digulir */
+        /* General CSS for layout and style */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -14,7 +14,7 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Ganti dari 'center' ke 'flex-start' */
+            align-items: flex-start;
         }
         .scroll-container {
             width: 100%;
@@ -23,8 +23,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            overflow-y: auto; /* Memungkinkan scrolling di wadah ini */
-            -webkit-overflow-scrolling: touch; /* Perilaku scrolling yang lebih baik di iOS */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         canvas {
             border-radius: 0.5rem;
@@ -216,6 +216,7 @@
         <div class="w-full text-lg text-center font-bold my-4 p-2 bg-slate-200 rounded-lg shadow-inner flex flex-col md:flex-row justify-around">
             <div>Uang: <span id="moneyDisplay"></span></div>
             <div>Populasi: <span id="populationDisplay"></span></div>
+            <div>Pekerja Tersedia: <span id="availableWorkersDisplay"></span></div>
         </div>
         
         <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
@@ -248,7 +249,6 @@
                 <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -264,7 +264,8 @@
             <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan, Rumah Sakit) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
             <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
-            <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi. Bangunan seperti Toko, Industri, dan Rumah Sakit akan memberikan keuntungan.</li>
+            <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi, dan bangun toko atau industri untuk memberikan lapangan pekerjaan bagi populasi.</li>
+            <li><strong>Pekerja:</strong> Bangunan bisnis hanya akan menghasilkan uang jika Anda memiliki cukup populasi untuk mengisi semua posisi pekerjaan yang tersedia.</li>
             <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
             <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
         </ul>
@@ -277,7 +278,6 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Meningkatkan kecepatan pemain dari 0.5 menjadi 1.0 agar lebih responsif
     let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.0, color: '#ef4444' }; 
     let activeMode = 'move';
     let buildingType = null;
@@ -294,11 +294,17 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
+    // Base income values per worker
+    const baseIncomePerWorker = {
+        store: 16.67,
+        industrial: 25.00
+    };
+
     const buildingStats = {
-        house: { cost: 100, population: 5, name: 'Rumah', color: '#fde047' },
+        house: { cost: 100, populationCapacity: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10, influenceRadius: 5 },
-        store: { cost: 200, name: 'Toko', color: '#f59e0b', baseIncome: 250 },
-        industrial: { cost: 300, name: 'Industri', color: '#1f2937', baseIncome: 400 },
+        store: { cost: 200, name: 'Toko', color: '#f59e0b', workersRequired: 3 },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937', workersRequired: 8 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
         hospital: {
             cost: 500,
@@ -311,10 +317,12 @@
         }
     };
     
+    // UI elements
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const moneyDisplay = document.getElementById('moneyDisplay');
     const populationDisplay = document.getElementById('populationDisplay');
+    const availableWorkersDisplay = document.getElementById('availableWorkersDisplay');
     const taxRateDisplay = document.getElementById('taxRateDisplay');
     const taxRateSlider = document.getElementById('taxRateSlider');
     const infoBoxEl = document.getElementById('infoBox');
@@ -351,7 +359,7 @@
         right: document.getElementById('portrait-right-btn')
     };
     
-    // Fungsi untuk format uang ke Rupiah
+    // Function to format money to IDR
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -361,14 +369,14 @@
         }).format(amount);
     }
 
-    // Fungsi untuk menemukan bangunan di petak tertentu
+    // Function to find a building at a specific tile
     function findBuilding(tileX, tileY) {
         return buildings.find(b =>
             Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
         );
     }
     
-    // Fungsi untuk memeriksa koneksi ke jalan
+    // Function to check for road connection
     function isConnectedToRoad(tileX, tileY) {
         const adjacentTiles = [
             { x: tileX, y: tileY - 1 },
@@ -382,7 +390,7 @@
         });
     }
 
-    // Fungsi untuk menghitung kebutuhan dan bonus bangunan
+    // Function to calculate building needs and bonuses (UPDATED for worker system)
     function calculateNeeds() {
         const influentialBuildings = buildings.filter(b => buildingStats[b.type].influenceRadius);
 
@@ -414,46 +422,71 @@
                 happinessBonus -= taxPenalty;
                 
                 building.needs.happiness = Math.max(0, Math.min(100, Math.floor(happinessBonus + 50)));
-            } else if (building.type === 'store' || building.type === 'industrial') {
-                const nearbyHouses = buildings.filter(b => {
-                    const distanceX = Math.abs(building.x - b.x);
-                    const distanceY = Math.abs(building.y - b.y);
-                    const distanceInBlocks = Math.sqrt(Math.pow(distanceX, 2) + Math.pow(distanceY, 2)) / gridSize;
-                    return b.type === 'house' && distanceInBlocks <= influenceRadiusInBlocks;
-                }).length;
-                
-                let profitabilityBonus = nearbyHouses * 20;
-                if (isConnected) profitabilityBonus += 40;
-                if (population === 0) profitabilityBonus = 0;
-                building.needs.profitability = Math.min(100, profitabilityBonus);
             }
         });
     }
 
     function gameLoop() {
-        if (activeMode === 'move') {
-            let moveX = 0, moveY = 0;
-            if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
-            if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
-            if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-            if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
-            
-            const playerScreenX = player.x - mapOffset.x;
-            const playerScreenY = player.y - mapOffset.y;
-            const edgeBuffer = 200;
+        // Player movement logic (keyboard and touch)
+        let moveX = 0, moveY = 0;
+        if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
+        if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
+        if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+        if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
 
-            if (playerScreenX + moveX < edgeBuffer) mapOffset.x -= player.speed;
-            if (playerScreenX + moveX > canvas.width - edgeBuffer) mapOffset.x += player.speed;
-            if (playerScreenY + moveY < edgeBuffer) mapOffset.y -= player.speed;
-            if (playerScreenY + moveY > canvas.height - edgeBuffer) mapOffset.y += player.speed;
-            
-            player.x += moveX;
-            player.y += moveY;
-            const worldSize = 5000;
-            player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
-            player.y = Math.min(Math.max(0, player.y), worldSize - player.height);
+        let playerScreenX = player.x - mapOffset.x;
+        let playerScreenY = player.y - mapOffset.y;
+        
+        // Adjust map offset to keep player visible
+        const edgeBuffer = 200;
+
+        if (playerScreenX + moveX < edgeBuffer) mapOffset.x -= player.speed;
+        if (playerScreenX + moveX > canvas.width - edgeBuffer) mapOffset.x += player.speed;
+        if (playerScreenY + moveY < edgeBuffer) mapOffset.y -= player.speed;
+        if (playerScreenY + moveY > canvas.height - edgeBuffer) mapOffset.y += player.speed;
+        
+        // Update player position
+        player.x += moveX;
+        player.y += moveY;
+        const worldSize = 5000;
+        player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
+        player.y = Math.min(Math.max(0, player.y), worldSize - player.height);
+
+        // Perhitungan total populasi
+        let totalPopulation = 0;
+        buildings.forEach(b => {
+            if (b.type === 'house') {
+                totalPopulation += b.population;
+            }
+        });
+        population = totalPopulation;
+        
+        // Perhitungan total pekerja yang dibutuhkan
+        let totalWorkersRequired = 0;
+        buildings.forEach(b => {
+            const stats = buildingStats[b.type];
+            if (stats.workersRequired) {
+                totalWorkersRequired += stats.workersRequired;
+            }
+        });
+        
+        // Menetapkan pekerja ke bangunan yang membutuhkan
+        let workersAssigned = 0;
+        const businessBuildings = buildings.filter(b => b.type === 'store' || b.type === 'industrial');
+        
+        // Reset workers assigned for all business buildings
+        businessBuildings.forEach(b => b.workersAssigned = 0);
+
+        let availableWorkers = population;
+        for (const b of businessBuildings) {
+            const workersNeeded = buildingStats[b.type].workersRequired;
+            const workersToAssign = Math.min(workersNeeded, Math.max(0, availableWorkers));
+            b.workersAssigned = workersToAssign;
+            availableWorkers -= workersToAssign;
+            workersAssigned += workersToAssign;
         }
 
+        // Perhitungan pendapatan dan biaya per detik
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
             let totalExpenditure = 0;
@@ -464,12 +497,16 @@
                 if (b.type === 'house') {
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
-                    totalIncome += stats.baseIncome * (b.needs.profitability / 100) * (taxRate / 100);
+                    // Hanya pendapatan jika ada pekerja yang ditugaskan
+                    if (b.workersAssigned > 0) {
+                        const taxGain = (baseIncomePerWorker[b.type] * b.workersAssigned) * (taxRate / 100);
+                        totalIncome += taxGain;
+                    }
                 } else if (b.type === 'hospital') {
                     const hospitalTax = b.currentPatients * stats.treatmentCost;
                     const hospitalMaintenance = stats.maintenance;
-                    const netIncome = (hospitalTax * (taxRate / 100)) - hospitalMaintenance;
-                    totalIncome += netIncome;
+                    totalIncome += (hospitalTax * (taxRate / 100));
+                    totalExpenditure += hospitalMaintenance;
                 }
                 
                 if (stats.maintenance && b.type !== 'hospital') {
@@ -483,6 +520,8 @@
 
         moneyDisplay.textContent = formatRupiah(money);
         populationDisplay.textContent = population;
+        availableWorkersDisplay.textContent = Math.max(0, population - workersAssigned);
+
 
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -492,7 +531,6 @@
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
         const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
         
-        // Draw vertical lines
         for (let x = 0; x < screenGridSizeX; x++) {
             const drawX = (x * gridSize) - (mapOffset.x % gridSize);
             ctx.beginPath();
@@ -501,7 +539,6 @@
             ctx.stroke();
         }
         
-        // Draw horizontal lines
         for (let y = 0; y < screenGridSizeY; y++) {
             const drawY = (y * gridSize) - (mapOffset.y % gridSize);
             ctx.beginPath();
@@ -510,7 +547,6 @@
             ctx.stroke();
         }
         
-        // Loop untuk menggambar semua bangunan
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
@@ -518,7 +554,6 @@
             
             ctx.fillStyle = building.color;
 
-            // Logika baru untuk menggambar bentuk bangunan
             if (building.type === 'house') {
                 drawHouse(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
@@ -532,8 +567,9 @@
             }
         });
         
-        const playerScreenX = player.x - mapOffset.x;
-        const playerScreenY = player.y - mapOffset.y;
+        playerScreenX = player.x - mapOffset.x;
+        playerScreenY = player.y - mapOffset.y;
+        
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
 
@@ -549,23 +585,22 @@
             const stats = buildingStats[buildingFound.type];
             if (buildingFound.type === 'house') {
                 infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
+                infoText += `<p>Kapasitas Maks: ${stats.populationCapacity} orang</p>`;
                 infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
                 const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
-                const profitPerBuilding = stats.baseIncome * (buildingFound.needs.profitability / 100) * (taxRate / 100);
-                infoText += `<p>Profitabilitas: ${buildingFound.needs.profitability}%</p>`;
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(profitPerBuilding)}/detik</p>`;
+                infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
+                infoText += `<p>Pekerja Ditugaskan: ${buildingFound.workersAssigned || 0}</p>`;
+                // Add tax info back for store and industrial buildings
+                const taxGain = (baseIncomePerWorker[buildingFound.type] * (buildingFound.workersAssigned || 0)) * (taxRate / 100);
+                infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                const hospitalTax = buildingFound.currentPatients * stats.treatmentCost;
-                const hospitalMaintenance = stats.maintenance;
-                const netIncome = (hospitalTax * (taxRate / 100)) - hospitalMaintenance;
-                
+                // Display basic info, without "profit"
                 infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
                 infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
-                infoText += `<p>Pajak Pengobatan: ${formatRupiah(hospitalTax * (taxRate / 100))}/detik</p>`;
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(hospitalMaintenance)}/detik</p>`;
-                infoText += `<p><strong>Keuntungan Bersih: ${formatRupiah(netIncome)}/detik</strong></p>`;
+                infoText += `<p>Pajak Pengobatan: ${formatRupiah(buildingFound.currentPatients * stats.treatmentCost)}/detik</p>`;
+                infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
             }
             if (stats.maintenance && buildingFound.type !== 'hospital') {
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
@@ -583,14 +618,13 @@
     }
 
     /**
-     * @param {number} x - Posisi X di canvas.
-     * @param {number} y - Posisi Y di canvas.
-     * @param {number} width - Lebar rumah.
-     * @param {number} height - Tinggi rumah.
-     * @param {string} color - Warna rumah.
+     * @param {number} x - X position on canvas.
+     * @param {number} y - Y position on canvas.
+     * @param {number} width - Width of the house.
+     * @param {number} height - Height of the house.
+     * @param {string} color - Color of the house.
      */
     function drawHouse(x, y, width, height, color) {
-        // Menggambar badan rumah
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.moveTo(x, y + height);
@@ -603,32 +637,28 @@
         ctx.strokeStyle = '#334155';
         ctx.stroke();
 
-        // Menggambar cerobong asap
         ctx.fillStyle = '#6b7280';
         ctx.fillRect(x + width * 0.7, y + height * 0.1, width * 0.1, height * 0.2);
         
-        // Menggambar pintu
         ctx.fillStyle = '#4a5568';
         ctx.fillRect(x + width * 0.4, y + height * 0.6, width * 0.2, height * 0.4);
         
-        // Menggambar jendela
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(x + width * 0.15, y + height * 0.5, width * 0.2, height * 0.2);
         ctx.fillRect(x + width * 0.65, y + height * 0.5, width * 0.2, height * 0.2);
     }
 
     /**
-     * Menggambar taman sebagai kotak hijau sederhana.
-     * @param {number} x - Posisi X di canvas.
-     * @param {number} y - Posisi Y di canvas.
-     * @param {number} width - Lebar taman.
-     * @param {number} height - Tinggi taman.
+     * Draws a simple green box for a park.
+     * @param {number} x - X position on canvas.
+     * @param {number} y - Y position on canvas.
+     * @param {number} width - Width of the park.
+     * @param {number} height - Height of the park.
      */
     function drawPark(x, y, width, height) {
         ctx.fillStyle = '#22c55e'; 
         ctx.fillRect(x, y, width, height);
     }
-
 
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
@@ -690,6 +720,7 @@
     }
 
     function init() {
+        // Event listener for keyboard
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -706,6 +737,7 @@
             keys[e.key.toLowerCase()] = false;
         });
 
+        // Event listener for touch controls on buttons
         const allMobileButtons = [
             landscapeControls.up, landscapeControls.down, landscapeControls.left, landscapeControls.right,
             portraitControls.up, portraitControls.down, portraitControls.left, portraitControls.right
@@ -713,21 +745,24 @@
 
         allMobileButtons.forEach(btn => {
             if (btn) {
-                btn.addEventListener('touchstart', (e) => {
+                btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     if (e.target.id.includes('up')) touchControls.up = true;
                     if (e.target.id.includes('down')) touchControls.down = true;
                     if (e.target.id.includes('left')) touchControls.left = true;
                     if (e.target.id.includes('right')) touchControls.right = true;
-                });
-                btn.addEventListener('touchend', () => {
-                    touchControls.up = false;
-                    touchControls.down = false;
-                    touchControls.left = false;
-                    touchControls.right = false;
+                    document.body.addEventListener('pointerup', resetTouchControls);
                 });
             }
         });
+        
+        function resetTouchControls() {
+            touchControls.up = false;
+            touchControls.down = false;
+            touchControls.left = false;
+            touchControls.right = false;
+            document.body.removeEventListener('pointerup', resetTouchControls);
+        }
 
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -749,9 +784,10 @@
                         y: tileY * gridSize, 
                         type: buildingType, 
                         color: stats.color,
-                        population: stats.population || 0, 
+                        population: stats.populationCapacity || 0,
                         currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
-                        needs: { happiness: 0, profitability: 0 }
+                        needs: { happiness: 0 },
+                        workersAssigned: 0
                     };
                     
                     buildings.push(newBuilding);
@@ -783,12 +819,14 @@
             }
         });
 
+        // Event listener for tax rate slider
         taxRateSlider.addEventListener('input', (e) => {
             taxRate = parseInt(e.target.value);
             taxRateDisplay.textContent = taxRate;
             calculateNeeds();
         });
 
+        // Event listeners for UI buttons
         buildMenuButton.addEventListener('click', togglePopupMenu);
         moveModeButton.addEventListener('click', () => setMode('move', null));
         destroyModeButton.addEventListener('click', () => setMode('destroy', null));
@@ -818,6 +856,7 @@
 
         restartGame();
 
+        // Interval for population and patient updates
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
@@ -830,7 +869,7 @@
                 let newPopulation = house.population + changeAmount;
                 if (taxRate > 40 && newPopulation < 0) newPopulation = 0;
                 else if (newPopulation < 1) newPopulation = 1;
-                house.population = Math.min(buildingStats.house.population, newPopulation);
+                house.population = Math.min(buildingStats.house.populationCapacity, newPopulation);
             });
             let totalPopulation = 0;
             buildings.forEach(b => {
@@ -862,7 +901,8 @@
         gameLoop();
     }
 
-    window.onload = init;
+    // Use DOMContentLoaded instead of window.onload for better compatibility
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
