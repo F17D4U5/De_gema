@@ -6,12 +6,12 @@
     <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Perbaikan: Wadah fleksibel untuk konten yang dapat digulir */
+        /* General CSS for layout and style */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             background-color: #f3f4f6;
-            min-height: 10vh;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -249,7 +249,6 @@
                 <button id="restartButton" class="action-button bg-yellow-500 hover:bg-yellow-600">Mulai Ulang</button>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -279,7 +278,6 @@
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    // Meningkatkan kecepatan pemain dari 0.5 menjadi 1.0 agar lebih responsif
     let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.0, color: '#ef4444' }; 
     let activeMode = 'move';
     let buildingType = null;
@@ -296,13 +294,10 @@
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
-    // Nilai penghasilan dasar per pekerja, dihitung berdasarkan permintaan pengguna
-    // '2,5 per 5% pajak' untuk toko (membutuhkan 3 pekerja)
-    // Formula: 2.5 = (baseIncomePerWorker * 3) * (5/100)
-    // Maka, baseIncomePerWorker = 2.5 / (3 * 0.05) = 16.67
+    // Base income values per worker
     const baseIncomePerWorker = {
         store: 16.67,
-        industrial: 25.00 // Nilai yang lebih tinggi untuk industri
+        industrial: 25.00
     };
 
     const buildingStats = {
@@ -322,6 +317,7 @@
         }
     };
     
+    // UI elements
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const moneyDisplay = document.getElementById('moneyDisplay');
@@ -363,7 +359,7 @@
         right: document.getElementById('portrait-right-btn')
     };
     
-    // Fungsi untuk format uang ke Rupiah
+    // Function to format money to IDR
     function formatRupiah(amount) {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -373,14 +369,14 @@
         }).format(amount);
     }
 
-    // Fungsi untuk menemukan bangunan di petak tertentu
+    // Function to find a building at a specific tile
     function findBuilding(tileX, tileY) {
         return buildings.find(b =>
             Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
         );
     }
     
-    // Fungsi untuk memeriksa koneksi ke jalan
+    // Function to check for road connection
     function isConnectedToRoad(tileX, tileY) {
         const adjacentTiles = [
             { x: tileX, y: tileY - 1 },
@@ -394,7 +390,7 @@
         });
     }
 
-    // Fungsi untuk menghitung kebutuhan dan bonus bangunan (DIPERBARUI untuk sistem pekerja)
+    // Function to calculate building needs and bonuses (UPDATED for worker system)
     function calculateNeeds() {
         const influentialBuildings = buildings.filter(b => buildingStats[b.type].influenceRadius);
 
@@ -431,35 +427,37 @@
     }
 
     function gameLoop() {
-        if (activeMode === 'move') {
-            let moveX = 0, moveY = 0;
-            if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
-            if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
-            if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-            // Memperbaiki kesalahan: Mengubah 'touchX.right' menjadi 'touchControls.right'
-            if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
-            
-            const playerScreenX = player.x - mapOffset.x;
-            const playerScreenY = player.y - mapOffset.y;
-            const edgeBuffer = 200;
+        // Player movement logic (keyboard and touch)
+        let moveX = 0, moveY = 0;
+        if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
+        if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
+        if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
+        if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
 
-            if (playerScreenX + moveX < edgeBuffer) mapOffset.x -= player.speed;
-            if (playerScreenX + moveX > canvas.width - edgeBuffer) mapOffset.x += player.speed;
-            if (playerScreenY + moveY < edgeBuffer) mapOffset.y -= player.speed;
-            if (playerScreenY + moveY > canvas.height - edgeBuffer) mapOffset.y += player.speed;
-            
-            player.x += moveX;
-            player.y += moveY;
-            const worldSize = 5000;
-            player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
-            player.y = Math.min(Math.max(0, player.y), worldSize - player.height);
-        }
+        // The fix for the bug: These variables are declared outside of the gameLoop.
+        // We just need to define them here without `const` or `let`.
+        let playerScreenX = player.x - mapOffset.x;
+        let playerScreenY = player.y - mapOffset.y;
+        
+        // Adjust map offset to keep player visible
+        const edgeBuffer = 200;
+
+        if (playerScreenX + moveX < edgeBuffer) mapOffset.x -= player.speed;
+        if (playerScreenX + moveX > canvas.width - edgeBuffer) mapOffset.x += player.speed;
+        if (playerScreenY + moveY < edgeBuffer) mapOffset.y -= player.speed;
+        if (playerScreenY + moveY > canvas.height - edgeBuffer) mapOffset.y += player.speed;
+        
+        // Update player position
+        player.x += moveX;
+        player.y += moveY;
+        const worldSize = 5000;
+        player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
+        player.y = Math.min(Math.max(0, player.y), worldSize - player.height);
 
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
             let totalExpenditure = 0;
             
-            // Hitung total populasi
             let totalPopulation = 0;
             buildings.forEach(b => {
                 if (b.type === 'house') {
@@ -468,14 +466,11 @@
             });
             population = totalPopulation;
             
-            // Logika baru untuk alokasi pekerja
             let availableWorkers = population;
             const businessBuildings = buildings.filter(b => b.type === 'store' || b.type === 'industrial');
 
-            // Reset pekerja yang ditugaskan
             businessBuildings.forEach(b => b.workersAssigned = 0);
 
-            // Alokasikan pekerja secara proporsional ke bangunan bisnis
             for (const b of businessBuildings) {
                 const workersNeeded = buildingStats[b.type].workersRequired;
                 const workersToAssign = Math.min(workersNeeded, availableWorkers);
@@ -484,15 +479,12 @@
                 if (availableWorkers <= 0) break;
             }
 
-            // Hitung pendapatan dari semua sumber
             buildings.forEach(b => {
                 const stats = buildingStats[b.type];
                 
                 if (b.type === 'house') {
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (b.type === 'store' || b.type === 'industrial') {
-                    // Dapatkan pendapatan hanya jika ada pekerja yang ditugaskan
-                    // Logika ini memastikan hanya toko dengan pekerja yang menghasilkan uang
                     if (b.workersAssigned > 0) {
                         const taxGain = (baseIncomePerWorker[b.type] * b.workersAssigned) * (taxRate / 100);
                         totalIncome += taxGain;
@@ -535,7 +527,6 @@
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
         const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
         
-        // Draw vertical lines
         for (let x = 0; x < screenGridSizeX; x++) {
             const drawX = (x * gridSize) - (mapOffset.x % gridSize);
             ctx.beginPath();
@@ -544,7 +535,6 @@
             ctx.stroke();
         }
         
-        // Draw horizontal lines
         for (let y = 0; y < screenGridSizeY; y++) {
             const drawY = (y * gridSize) - (mapOffset.y % gridSize);
             ctx.beginPath();
@@ -553,7 +543,6 @@
             ctx.stroke();
         }
         
-        // Loop untuk menggambar semua bangunan
         buildings.forEach(building => {
             const drawX = building.x - mapOffset.x;
             const drawY = building.y - mapOffset.y;
@@ -561,7 +550,6 @@
             
             ctx.fillStyle = building.color;
 
-            // Logika baru untuk menggambar bentuk bangunan
             if (building.type === 'house') {
                 drawHouse(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
@@ -575,8 +563,10 @@
             }
         });
         
-        const playerScreenX = player.x - mapOffset.x;
-        const playerScreenY = player.y - mapOffset.y;
+        // This is the variable that caused the error. Now it's not redeclared.
+        playerScreenX = player.x - mapOffset.x;
+        playerScreenY = player.y - mapOffset.y;
+        
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
 
@@ -597,11 +587,7 @@
                 const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
-                // Perubahan: Format pekerja yang ditugaskan / dibutuhkan
                 infoText += `<p>Pekerja Dibutuhkan: ${buildingFound.workersAssigned || 0}/${stats.workersRequired}</p>`;
-                
-                // Perubahan: Mengganti "Penghasilan Tetap" dengan "Pajak Bangunan"
-                // Formula ini memastikan penghasilan dihitung berdasarkan pekerja yang ditugaskan dan tingkat pajak saat ini
                 const taxGain = (baseIncomePerWorker[buildingFound.type] * (buildingFound.workersAssigned || 0)) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
@@ -631,14 +617,13 @@
     }
 
     /**
-     * @param {number} x - Posisi X di canvas.
-     * @param {number} y - Posisi Y di canvas.
-     * @param {number} width - Lebar rumah.
-     * @param {number} height - Tinggi rumah.
-     * @param {string} color - Warna rumah.
+     * @param {number} x - X position on canvas.
+     * @param {number} y - Y position on canvas.
+     * @param {number} width - Width of the house.
+     * @param {number} height - Height of the house.
+     * @param {string} color - Color of the house.
      */
     function drawHouse(x, y, width, height, color) {
-        // Menggambar badan rumah
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.moveTo(x, y + height);
@@ -651,32 +636,28 @@
         ctx.strokeStyle = '#334155';
         ctx.stroke();
 
-        // Menggambar cerobong asap
         ctx.fillStyle = '#6b7280';
         ctx.fillRect(x + width * 0.7, y + height * 0.1, width * 0.1, height * 0.2);
         
-        // Menggambar pintu
         ctx.fillStyle = '#4a5568';
         ctx.fillRect(x + width * 0.4, y + height * 0.6, width * 0.2, height * 0.4);
         
-        // Menggambar jendela
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(x + width * 0.15, y + height * 0.5, width * 0.2, height * 0.2);
         ctx.fillRect(x + width * 0.65, y + height * 0.5, width * 0.2, height * 0.2);
     }
 
     /**
-     * Menggambar taman sebagai kotak hijau sederhana.
-     * @param {number} x - Posisi X di canvas.
-     * @param {number} y - Posisi Y di canvas.
-     * @param {number} width - Lebar taman.
-     * @param {number} height - Tinggi taman.
+     * Draws a simple green box for a park.
+     * @param {number} x - X position on canvas.
+     * @param {number} y - Y position on canvas.
+     * @param {number} width - Width of the park.
+     * @param {number} height - Height of the park.
      */
     function drawPark(x, y, width, height) {
         ctx.fillStyle = '#22c55e'; 
         ctx.fillRect(x, y, width, height);
     }
-
 
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
@@ -738,7 +719,7 @@
     }
 
     function init() {
-        // Event listener untuk keyboard
+        // Event listener for keyboard
         window.addEventListener('keydown', (e) => {
             keys[e.key.toLowerCase()] = true;
             if (e.key.toLowerCase() === 'm') setMode('move', null);
@@ -755,7 +736,7 @@
             keys[e.key.toLowerCase()] = false;
         });
 
-        // Event listener untuk kontrol sentuh
+        // Event listener for touch controls on buttons
         const allMobileButtons = [
             landscapeControls.up, landscapeControls.down, landscapeControls.left, landscapeControls.right,
             portraitControls.up, portraitControls.down, portraitControls.left, portraitControls.right
@@ -763,26 +744,22 @@
 
         allMobileButtons.forEach(btn => {
             if (btn) {
-                // Gunakan pointerdown untuk mendeteksi sentuhan atau klik
                 btn.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     if (e.target.id.includes('up')) touchControls.up = true;
                     if (e.target.id.includes('down')) touchControls.down = true;
                     if (e.target.id.includes('left')) touchControls.left = true;
                     if (e.target.id.includes('right')) touchControls.right = true;
-                    // Mencegah masalah sentuhan "lengket" dengan juga mereset pada pointerup
                     document.body.addEventListener('pointerup', resetTouchControls);
                 });
             }
         });
         
-        // Fungsi untuk mereset semua kontrol sentuh. Dipanggil pada 'pointerup'
         function resetTouchControls() {
             touchControls.up = false;
             touchControls.down = false;
             touchControls.left = false;
             touchControls.right = false;
-            // Hapus listener agar tidak bocor memori
             document.body.removeEventListener('pointerup', resetTouchControls);
         }
 
@@ -809,7 +786,7 @@
                         population: stats.populationCapacity || 0,
                         currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
                         needs: { happiness: 0 },
-                        workersAssigned: 0 // Inisialisasi pekerja yang ditugaskan
+                        workersAssigned: 0
                     };
                     
                     buildings.push(newBuilding);
@@ -841,12 +818,14 @@
             }
         });
 
+        // Event listener for tax rate slider
         taxRateSlider.addEventListener('input', (e) => {
             taxRate = parseInt(e.target.value);
             taxRateDisplay.textContent = taxRate;
             calculateNeeds();
         });
 
+        // Event listeners for UI buttons
         buildMenuButton.addEventListener('click', togglePopupMenu);
         moveModeButton.addEventListener('click', () => setMode('move', null));
         destroyModeButton.addEventListener('click', () => setMode('destroy', null));
@@ -876,6 +855,7 @@
 
         restartGame();
 
+        // Interval for population and patient updates
         setInterval(() => {
             buildings.filter(b => b.type === 'house').forEach(house => {
                 let changeAmount = 0;
