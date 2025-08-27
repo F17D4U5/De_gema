@@ -592,11 +592,11 @@
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
                 infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
                 infoText += `<p>Pekerja Ditugaskan: ${buildingFound.workersAssigned || 0}</p>`;
-                // Tambahkan informasi pajak kembali
+                // Add tax info back for store and industrial buildings
                 const taxGain = (baseIncomePerWorker[buildingFound.type] * (buildingFound.workersAssigned || 0)) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
-                // Menampilkan informasi dasar, tanpa "keuntungan"
+                // Display basic info, without "profit"
                 infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
                 infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
                 infoText += `<p>Pajak Pengobatan: ${formatRupiah(buildingFound.currentPatients * stats.treatmentCost)}/detik</p>`;
@@ -901,7 +901,8 @@
         gameLoop();
     }
 
-    window.onload = init;
+    // Use DOMContentLoaded instead of window.onload for better compatibility
+    document.addEventListener('DOMContentLoaded', init);
 </script>
 
 </body>
