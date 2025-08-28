@@ -503,10 +503,15 @@
                         totalIncome += taxGain;
                     }
                 } else if (b.type === 'hospital') {
-                    const hospitalTax = b.currentPatients * stats.treatmentCost;
+                    // --- PERBAIKAN BUG PAJAK PENGOBATAN DIMULAI DI SINI ---
+                    // Bug sebelumnya: totalIncome tidak pernah diperbarui.
+                    const hospitalTax = (b.currentPatients || 0) * stats.treatmentCost;
                     const hospitalMaintenance = stats.maintenance;
-                    totalIncome += (hospitalTax * (taxRate / 100));
+                    
+                    // Baris ini diperbaiki: Sekarang totalIncome diperbarui dengan pajak dari rumah sakit.
+                    totalIncome += hospitalTax * (taxRate / 100);
                     totalExpenditure += hospitalMaintenance;
+                    // --- PERBAIKAN BUG PAJAK PENGOBATAN BERAKHIR DI SINI ---
                 }
                 
                 if (stats.maintenance && b.type !== 'hospital') {
@@ -592,14 +597,13 @@
             } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
                 infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
                 infoText += `<p>Pekerja Ditugaskan: ${buildingFound.workersAssigned || 0}</p>`;
-                // Add tax info back for store and industrial buildings
                 const taxGain = (baseIncomePerWorker[buildingFound.type] * (buildingFound.workersAssigned || 0)) * (taxRate / 100);
                 infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
             } else if (buildingFound.type === 'hospital') {
                 // Display basic info, without "profit"
                 infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
                 infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
-                infoText += `<p>Pajak Pengobatan: ${formatRupiah(buildingFound.currentPatients * stats.treatmentCost)}/detik</p>`;
+                infoText += `<p>Pajak Pengobatan: ${formatRupiah((buildingFound.currentPatients || 0) * stats.treatmentCost)}/detik</p>`;
                 infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
             }
             if (stats.maintenance && buildingFound.type !== 'hospital') {
@@ -785,7 +789,7 @@
                         type: buildingType, 
                         color: stats.color,
                         population: stats.populationCapacity || 0,
-                        currentPatients: buildingType === 'hospital' ? (population > 0 ? Math.floor(Math.random() * stats.patientCapacity) + 1 : 0) : null,
+                        currentPatients: buildingType === 'hospital' ? 0 : null,
                         needs: { happiness: 0 },
                         workersAssigned: 0
                     };
@@ -879,22 +883,10 @@
 
             buildings.filter(b => b.type === 'hospital').forEach(hospital => {
                 const stats = buildingStats.hospital;
-                if (population === 0) {
-                    hospital.currentPatients = 0;
-                    return;
-                }
-                
-                let change = 0;
-                if (Math.random() < 0.5) {
-                    change = 1;
-                } else {
-                    change = -1;
-                }
-                
-                let newPatients = hospital.currentPatients + change;
-                hospital.currentPatients = Math.max(0, Math.min(stats.patientCapacity, Math.min(population, newPatients)));
+                // --- MENGEMBALIKAN LOGIKA PASIEN YANG ACAK SESUAI PERMINTAAN USER ---
+                const randomPatients = Math.floor(Math.random() * (stats.patientCapacity + 1));
+                hospital.currentPatients = Math.min(randomPatients, population);
             });
-
         }, 5000);
         setInterval(calculateNeeds, 2000);
 
