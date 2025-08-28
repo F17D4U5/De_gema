@@ -949,28 +949,31 @@
         }
         updateButtonStyles();
         if (newMode === 'build') {
-            togglePopupMenu();
+            if (!isPopupMenuOpen) togglePopupMenu();
+        } else {
+            if (isPopupMenuOpen) togglePopupMenu();
         }
     }
     
     function updateButtonStyles() {
         moveModeButton.classList.remove('mode-active');
         destroyModeButton.classList.remove('mode-active');
-        buildMenuButton.classList.remove('mode-active');
         
+        // Remove active class from all building buttons
         for (const btn in buildingButtons) {
             const buttonEl = buildingButtons[btn];
             if (buttonEl) {
                 buttonEl.classList.remove('mode-active');
             }
         }
-
+        
+        // Re-apply active class based on current mode and type
         if (activeMode === 'move') {
             moveModeButton.classList.add('mode-active');
         } else if (activeMode === 'destroy') {
             destroyModeButton.classList.add('mode-active');
         } else if (activeMode === 'build' && buildingType) {
-            buildMenuButton.classList.add('mode-active');
+            // Note: We don't activate the main 'Bangun' button, just the specific building button
             if (buildingButtons[buildingType]) {
                 buildingButtons[buildingType].classList.add('mode-active');
             }
@@ -1000,22 +1003,28 @@
             const key = e.key.toLowerCase();
             keys[key] = true;
             
-            // Player movement using arrow keys only
-            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
-                // Do nothing, handled in gameLoop
+            // Check for mode change shortcuts
+            if (key === 'm') {
+                setMode('move', null);
+            } else if (key === 'x') {
+                setMode('destroy', null);
             }
-            // Other keyboard shortcuts
-            else if (key === 'm') setMode('move', null);
-            else if (key === 'h') setMode('build', 'house');
+            
+            // Check for build shortcuts
+            if (key === 'h') setMode('build', 'house');
             else if (key === 'p') setMode('build', 'park');
             else if (key === 't') setMode('build', 'store');
             else if (key === 'i') setMode('build', 'industrial');
-            else if (key === 'j') setMode('build', 'road'); // Changed from 'r' to 'j'
+            else if (key === 'j') setMode('build', 'road');
             else if (key === 'o') setMode('build', 'hospital');
             else if (key === 'l') setMode('build', 'windTurbine');
-            else if (key === 'x') setMode('destroy', null);
-            else if (key === 'g') guideModal.classList.add('modal-show'); // Guide shortcut
-            else if (key === 'r') restartGame(); // Restart shortcut
+
+            // Check for other shortcuts
+            else if (key === 'g') {
+                guideModal.classList.add('modal-show');
+            } else if (key === 'r') {
+                restartGame();
+            }
         });
 
         window.addEventListener('keyup', (e) => {
@@ -1119,11 +1128,9 @@
         buildMenuButton.addEventListener('click', togglePopupMenu);
         moveModeButton.addEventListener('click', () => {
             setMode('move', null);
-            if (isPopupMenuOpen) togglePopupMenu();
         });
         destroyModeButton.addEventListener('click', () => {
             setMode('destroy', null);
-            if (isPopupMenuOpen) togglePopupMenu();
         });
         restartButton.addEventListener('click', restartGame);
 
@@ -1149,7 +1156,6 @@
         for (const type in buildingButtons) {
             buildingButtons[type].addEventListener('click', () => {
                 setMode('build', type);
-                togglePopupMenu();
             });
         }
 
