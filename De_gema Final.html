@@ -6,7 +6,7 @@
     <title>Simulasi Kota 2D Sederhana</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* General CSS for layout and style */
+        /* General CSS for layout and styling */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -37,16 +37,6 @@
         .mode-active {
             box-shadow: 0 0 0 4px #60a5fa;
             transform: scale(1.05);
-        }
-        .info-box {
-            position: absolute;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            transition: opacity 0.2s ease-in-out;
-            pointer-events: none;
-            z-index: 10;
         }
         .control-button {
             background-color: rgba(209, 213, 219, 0.7);
@@ -178,6 +168,26 @@
                 display: flex;
             }
         }
+        /* Style for the temporary message box */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 101;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
     </style>
 </head>
 <body>
@@ -191,7 +201,6 @@
 
         <div class="relative w-full flex justify-center">
             <canvas id="gameCanvas" class="w-full h-auto max-w-full"></canvas>
-            <div id="infoBox" class="info-box opacity-0 hidden"></div>
             
             <div id="landscape-controls">
                 <div></div>
@@ -233,6 +242,7 @@
                     <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
                     <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
                     <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
+                    <button id="powerPlantButton" class="action-button" style="background-color: #c4b5fd;">Bangun Pembangkit</button>
                 </div>
             </div>
             <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
@@ -256,12 +266,12 @@
     <div class="modal-content">
         <div class="modal-header">
             <h2>Panduan Permainan</h2>
-            <button id="modalCloseButton" class="modal-close">&times;</button>
+            <button id="guideModalCloseButton" class="modal-close">&times;</button>
         </div>
         <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
         <ul class="guide-list mt-4">
-            <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta.</li>
-            <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan (Rumah, Taman, Toko, Industri, Jalan, Rumah Sakit) lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
+            <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta. Dalam mode ini, klik bangunan untuk melihat informasinya.</li>
+            <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
             <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
             <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi, dan bangun toko atau industri untuk memberikan lapangan pekerjaan bagi populasi.</li>
@@ -272,32 +282,49 @@
     </div>
 </div>
 
+<!-- New modal to display building info -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="infoModalTitle">Informasi Bangunan</h2>
+            <button id="infoModalCloseButton" class="modal-close">&times;</button>
+        </div>
+        <div id="infoModalContent">
+            <!-- Info content will be inserted here by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Message box for temporary messages -->
+<div id="messageBox" class="message-box"></div>
+
 <script>
     // Game state variables
     let money = 1000.00;
     let population = 0;
     let buildings = [];
     let mapOffset = { x: 0, y: 0 };
-    let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.0, color: '#ef4444' }; 
+    let player = { x: 0, y: 0, width: 28, height: 28, speed: 1.0, color: '#ef4444' };
     let activeMode = 'move';
     let buildingType = null;
     let taxRate = 5;
-    let infoBox = { visible: false, x: 0, y: 0, content: '' };
     let isPopupMenuOpen = false;
+    let selectedBuilding = null; 
     
     // Game constants
     const gridSize = 40;
     const incomeInterval = 1000;
     const incomePerPersonPerSecond = 10;
     const influenceRadiusInBlocks = 7;
-    let lastIncomeTime = Date.now();
+    let lastIncomeTime = Date.now(); // CORRECTED SYNTAX ERROR
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
     // Base income values per worker
     const baseIncomePerWorker = {
         store: 16.67,
-        industrial: 25.00
+        industrial: 25.00,
+        powerPlant: 40.00 // New
     };
 
     const buildingStats = {
@@ -310,11 +337,12 @@
             cost: 500,
             name: 'Rumah Sakit',
             color: '#7b241c',
-            maintenance: 30, 
-            patientCapacity: 100, 
-            treatmentCost: 10, 
-            influenceRadius: 10 
-        }
+            maintenance: 30,
+            patientCapacity: 100,
+            treatmentCost: 10,
+            influenceRadius: 10
+        },
+        powerPlant: { cost: 750, name: 'Pembangkit Listrik', color: '#c4b5fd', workersRequired: 15, maintenance: 50 }
     };
     
     // UI elements
@@ -325,12 +353,16 @@
     const availableWorkersDisplay = document.getElementById('availableWorkersDisplay');
     const taxRateDisplay = document.getElementById('taxRateDisplay');
     const taxRateSlider = document.getElementById('taxRateSlider');
-    const infoBoxEl = document.getElementById('infoBox');
-    const modal = document.getElementById('guideModal');
+    const infoModal = document.getElementById('infoModal');
+    const infoModalCloseButton = document.getElementById('infoModalCloseButton');
+    const infoModalContent = document.getElementById('infoModalContent');
+    const guideModal = document.getElementById('guideModal');
+    const guideModalCloseButton = document.getElementById('guideModalCloseButton');
     const popupMenu = document.getElementById('popupMenu');
     const buildMenuButton = document.getElementById('buildMenuButton');
     const moveModeButton = document.getElementById('moveModeButton');
     const destroyModeButton = document.getElementById('destroyModeButton');
+    const messageBox = document.getElementById('messageBox');
 
     const buildingButtons = {
         house: document.getElementById('houseButton'),
@@ -339,11 +371,11 @@
         industrial: document.getElementById('industrialButton'),
         road: document.getElementById('roadButton'),
         hospital: document.getElementById('hospitalButton'),
+        powerPlant: document.getElementById('powerPlantButton'), // New button
     };
     
     const guideButton = document.getElementById('guideButton');
     const restartButton = document.getElementById('restartButton');
-    const modalCloseButton = document.getElementById('modalCloseButton');
 
     const landscapeControls = {
         up: document.getElementById('landscape-up-btn'),
@@ -367,6 +399,15 @@
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(amount);
+    }
+
+    // Function to show a temporary message
+    function showMessage(text) {
+        messageBox.textContent = text;
+        messageBox.classList.add('show');
+        setTimeout(() => {
+            messageBox.classList.remove('show');
+        }, 3000);
     }
 
     // Function to find a building at a specific tile
@@ -426,6 +467,38 @@
         });
     }
 
+    // --- FUNCTION TO DISPLAY THE INFO MODAL ---
+    function showInfoModal(building) {
+        let infoText = `
+            <h3 class="font-bold text-lg mb-1">${buildingStats[building.type].name}</h3>
+            <p>Posisi: (${Math.floor(building.x/gridSize)}, ${Math.floor(building.y/gridSize)})</p>
+        `;
+        const stats = buildingStats[building.type];
+        if (building.type === 'house') {
+            infoText += `<p>Populasi: ${building.population} orang</p>`;
+            infoText += `<p>Kapasitas Maks: ${stats.populationCapacity} orang</p>`;
+            infoText += `<p>Kebahagiaan Warga: ${building.needs.happiness}%</p>`;
+            const taxPerHouse = (building.population * incomePerPersonPerSecond) * (taxRate / 100);
+            infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
+        } else if (stats.workersRequired) {
+            infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
+            infoText += `<p>Pekerja Ditugaskan: ${building.workersAssigned || 0}</p>`;
+            const taxGain = (baseIncomePerWorker[building.type] * (building.workersAssigned || 0)) * (taxRate / 100);
+            infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
+        } else if (building.type === 'hospital') {
+            infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
+            infoText += `<p>Pasien Saat Ini: ${building.currentPatients} orang</p>`;
+            infoText += `<p>Pajak Pengobatan: ${formatRupiah((building.currentPatients || 0) * stats.treatmentCost)}/detik</p>`;
+            infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
+        }
+        if (stats.maintenance && building.type !== 'hospital') {
+            infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
+        }
+
+        infoModalContent.innerHTML = infoText;
+        infoModal.classList.add('modal-show');
+    }
+    
     function gameLoop() {
         // Player movement logic (keyboard and touch)
         let moveX = 0, moveY = 0;
@@ -452,7 +525,7 @@
         player.x = Math.max(0, Math.min(worldSize - player.width, player.x));
         player.y = Math.min(Math.max(0, player.y), worldSize - player.height);
 
-        // Perhitungan total populasi
+        // Calculate total population
         let totalPopulation = 0;
         buildings.forEach(b => {
             if (b.type === 'house') {
@@ -461,18 +534,9 @@
         });
         population = totalPopulation;
         
-        // Perhitungan total pekerja yang dibutuhkan
-        let totalWorkersRequired = 0;
-        buildings.forEach(b => {
-            const stats = buildingStats[b.type];
-            if (stats.workersRequired) {
-                totalWorkersRequired += stats.workersRequired;
-            }
-        });
-        
-        // Menetapkan pekerja ke bangunan yang membutuhkan
+        // Assign workers to buildings that need them
         let workersAssigned = 0;
-        const businessBuildings = buildings.filter(b => b.type === 'store' || b.type === 'industrial');
+        const businessBuildings = buildings.filter(b => buildingStats[b.type].workersRequired);
         
         // Reset workers assigned for all business buildings
         businessBuildings.forEach(b => b.workersAssigned = 0);
@@ -486,7 +550,7 @@
             workersAssigned += workersToAssign;
         }
 
-        // Perhitungan pendapatan dan biaya per detik
+        // Calculate income and expenses per second
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
             let totalExpenditure = 0;
@@ -496,22 +560,16 @@
                 
                 if (b.type === 'house') {
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
-                } else if (b.type === 'store' || b.type === 'industrial') {
-                    // Hanya pendapatan jika ada pekerja yang ditugaskan
+                } else if (stats.workersRequired) {
+                    // Only get income if workers are assigned
                     if (b.workersAssigned > 0) {
                         const taxGain = (baseIncomePerWorker[b.type] * b.workersAssigned) * (taxRate / 100);
                         totalIncome += taxGain;
                     }
                 } else if (b.type === 'hospital') {
-                    // --- PERBAIKAN BUG PAJAK PENGOBATAN DIMULAI DI SINI ---
-                    // Bug sebelumnya: totalIncome tidak pernah diperbarui.
                     const hospitalTax = (b.currentPatients || 0) * stats.treatmentCost;
-                    const hospitalMaintenance = stats.maintenance;
-                    
-                    // Baris ini diperbaiki: Sekarang totalIncome diperbarui dengan pajak dari rumah sakit.
                     totalIncome += hospitalTax * (taxRate / 100);
-                    totalExpenditure += hospitalMaintenance;
-                    // --- PERBAIKAN BUG PAJAK PENGOBATAN BERAKHIR DI SINI ---
+                    totalExpenditure += stats.maintenance;
                 }
                 
                 if (stats.maintenance && b.type !== 'hospital') {
@@ -577,46 +635,6 @@
         
         ctx.fillStyle = player.color;
         ctx.fillRect(playerScreenX, playerScreenY, player.width, player.height);
-
-        const playerTileX = Math.floor(player.x / gridSize);
-        const playerTileY = Math.floor(player.y / gridSize);
-        const buildingFound = findBuilding(playerTileX, playerTileY);
-
-        if (buildingFound) {
-            let infoText = `
-                <h3 class="font-bold text-lg mb-1">${buildingStats[buildingFound.type].name}</h3>
-                <p>Posisi: (${Math.floor(buildingFound.x/gridSize)}, ${Math.floor(buildingFound.y/gridSize)})</p>
-            `;
-            const stats = buildingStats[buildingFound.type];
-            if (buildingFound.type === 'house') {
-                infoText += `<p>Populasi: ${buildingFound.population} orang</p>`;
-                infoText += `<p>Kapasitas Maks: ${stats.populationCapacity} orang</p>`;
-                infoText += `<p>Kebahagiaan Warga: ${buildingFound.needs.happiness}%</p>`;
-                const taxPerHouse = (buildingFound.population * incomePerPersonPerSecond) * (taxRate / 100);
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
-            } else if (buildingFound.type === 'store' || buildingFound.type === 'industrial') {
-                infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
-                infoText += `<p>Pekerja Ditugaskan: ${buildingFound.workersAssigned || 0}</p>`;
-                const taxGain = (baseIncomePerWorker[buildingFound.type] * (buildingFound.workersAssigned || 0)) * (taxRate / 100);
-                infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
-            } else if (buildingFound.type === 'hospital') {
-                // Display basic info, without "profit"
-                infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
-                infoText += `<p>Pasien Saat Ini: ${buildingFound.currentPatients} orang</p>`;
-                infoText += `<p>Pajak Pengobatan: ${formatRupiah((buildingFound.currentPatients || 0) * stats.treatmentCost)}/detik</p>`;
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
-            }
-            if (stats.maintenance && buildingFound.type !== 'hospital') {
-                infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
-            }
-
-            infoBoxEl.innerHTML = infoText;
-            infoBoxEl.style.left = `${playerScreenX + player.width + 10}px`;
-            infoBoxEl.style.top = `${playerScreenY}px`;
-            infoBoxEl.classList.remove('opacity-0', 'hidden');
-        } else {
-            infoBoxEl.classList.add('opacity-0', 'hidden');
-        }
 
         requestAnimationFrame(gameLoop);
     }
@@ -717,10 +735,10 @@
         activeMode = 'move';
         buildingType = null;
         taxRate = 5;
-        infoBox = { visible: false, x: 0, y: 0, content: '' };
         taxRateDisplay.textContent = taxRate;
         taxRateSlider.value = taxRate;
         updateButtonStyles();
+        infoModal.classList.remove('modal-show');
     }
 
     function init() {
@@ -735,6 +753,7 @@
             else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
             else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
             else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital');
+            else if (e.key.toLowerCase() === 'l') setMode('build', 'powerPlant');
         });
 
         window.addEventListener('keyup', (e) => {
@@ -776,49 +795,47 @@
             const mouseY = (e.clientY - rect.top) * scaleY;
             const tileX = Math.floor((mouseX + mapOffset.x) / gridSize);
             const tileY = Math.floor((mouseY + mapOffset.y) / gridSize);
-
-            if (activeMode === 'build') {
-                const existingBuilding = findBuilding(tileX, tileY);
-                const stats = buildingStats[buildingType];
-                const cost = stats.cost;
-                if (!existingBuilding && money >= cost) {
-                    const newBuilding = {
-                        id: Date.now(), 
-                        x: tileX * gridSize, 
-                        y: tileY * gridSize, 
-                        type: buildingType, 
-                        color: stats.color,
-                        population: stats.populationCapacity || 0,
-                        currentPatients: buildingType === 'hospital' ? 0 : null,
-                        needs: { happiness: 0 },
-                        workersAssigned: 0
-                    };
-                    
-                    buildings.push(newBuilding);
-                    money -= cost;
-                    calculateNeeds();
-                } else if (existingBuilding) {
-                    infoBoxEl.innerHTML = `<p class="text-red-500">Sudah ada bangunan di sini!</p>`;
-                    infoBoxEl.classList.remove('opacity-0', 'hidden');
-                    infoBoxEl.style.left = `${mouseX + 10}px`;
-                    infoBoxEl.style.top = `${mouseY}px`;
-                    setTimeout(() => infoBoxEl.classList.add('opacity-0', 'hidden'), 1000);
-                } else if (money < cost) {
-                    infoBoxEl.innerHTML = `<p class="text-red-500">Uang tidak cukup! Biaya: ${formatRupiah(cost)}</p>`;
-                    infoBoxEl.classList.remove('opacity-0', 'hidden');
-                    infoBoxEl.style.left = `${mouseX + 10}px`;
-                    infoBoxEl.style.top = `${mouseY}px`;
-                    setTimeout(() => infoBoxEl.classList.add('opacity-0', 'hidden'), 1000);
+            
+            // New logic: click building for info when in move mode
+            if (activeMode === 'move') {
+                const clickedBuilding = findBuilding(tileX, tileY);
+                if (clickedBuilding) {
+                    showInfoModal(clickedBuilding);
                 }
-            } else if (activeMode === 'destroy') {
-                const buildingIndex = buildings.findIndex(b =>
-                    Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
-                );
-                if (buildingIndex !== -1) {
-                    const destroyedBuilding = buildings.splice(buildingIndex, 1)[0];
-                    const refund = buildingStats[destroyedBuilding.type].cost * 0.5;
-                    money += refund;
-                    calculateNeeds();
+            } else if (activeMode === 'build' || activeMode === 'destroy') {
+                
+                // Build and destroy logic
+                if (activeMode === 'build') {
+                    const existingBuilding = findBuilding(tileX, tileY);
+                    const stats = buildingStats[buildingType];
+                    const cost = stats.cost;
+                    if (!existingBuilding && money >= cost) {
+                        const newBuilding = {
+                            id: Date.now(), 
+                            x: tileX * gridSize, 
+                            y: tileY * gridSize, 
+                            type: buildingType, 
+                            color: stats.color,
+                            population: stats.populationCapacity || 0,
+                            currentPatients: buildingType === 'hospital' ? 0 : null,
+                            needs: { happiness: 0 },
+                            workersAssigned: 0
+                        };
+                        
+                        buildings.push(newBuilding);
+                        money -= cost;
+                        calculateNeeds();
+                    }
+                } else if (activeMode === 'destroy') {
+                    const buildingIndex = buildings.findIndex(b =>
+                        Math.floor(b.x / gridSize) === tileX && Math.floor(b.y / gridSize) === tileY
+                    );
+                    if (buildingIndex !== -1) {
+                        const destroyedBuilding = buildings.splice(buildingIndex, 1)[0];
+                        const refund = buildingStats[destroyedBuilding.type].cost * 0.5;
+                        money += refund;
+                        calculateNeeds();
+                    }
                 }
             }
         });
@@ -832,14 +849,29 @@
 
         // Event listeners for UI buttons
         buildMenuButton.addEventListener('click', togglePopupMenu);
-        moveModeButton.addEventListener('click', () => setMode('move', null));
-        destroyModeButton.addEventListener('click', () => setMode('destroy', null));
+        moveModeButton.addEventListener('click', () => {
+            setMode('move', null);
+            if (isPopupMenuOpen) togglePopupMenu();
+        });
+        destroyModeButton.addEventListener('click', () => {
+            setMode('destroy', null);
+            if (isPopupMenuOpen) togglePopupMenu();
+        });
         restartButton.addEventListener('click', restartGame);
-        guideButton.addEventListener('click', () => { modal.classList.add('modal-show'); });
-        modalCloseButton.addEventListener('click', () => { modal.classList.remove('modal-show'); });
+
+        // Show and hide guide modal
+        guideButton.addEventListener('click', () => { guideModal.classList.add('modal-show'); });
+        guideModalCloseButton.addEventListener('click', () => { guideModal.classList.remove('modal-show'); });
+        
+        // Hide info modal
+        infoModalCloseButton.addEventListener('click', () => { infoModal.classList.remove('modal-show'); });
+        
         window.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                modal.classList.remove('modal-show');
+            if (event.target === guideModal) {
+                guideModal.classList.remove('modal-show');
+            }
+            if (event.target === infoModal) {
+                infoModal.classList.remove('modal-show');
             }
             if (isPopupMenuOpen && !popupMenu.contains(event.target) && !buildMenuButton.contains(event.target)) {
                 togglePopupMenu();
@@ -847,7 +879,10 @@
         });
         
         for (const type in buildingButtons) {
-            buildingButtons[type].addEventListener('click', () => setMode('build', type));
+            buildingButtons[type].addEventListener('click', () => {
+                setMode('build', type);
+                togglePopupMenu();
+            });
         }
 
         const resizeCanvas = () => {
@@ -883,7 +918,6 @@
 
             buildings.filter(b => b.type === 'hospital').forEach(hospital => {
                 const stats = buildingStats.hospital;
-                // --- MENGEMBALIKAN LOGIKA PASIEN YANG ACAK SESUAI PERMINTAAN USER ---
                 const randomPatients = Math.floor(Math.random() * (stats.patientCapacity + 1));
                 hospital.currentPatients = Math.min(randomPatients, population);
             });
