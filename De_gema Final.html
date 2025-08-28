@@ -93,6 +93,8 @@
             width: 500px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             position: relative;
+            max-height: 80vh; /* Added to enable scrolling */
+            overflow-y: auto; /* Added to enable scrolling */
         }
         .modal-header {
             display: flex;
@@ -226,6 +228,7 @@
             <div>Uang: <span id="moneyDisplay"></span></div>
             <div>Populasi: <span id="populationDisplay"></span></div>
             <div>Pekerja Tersedia: <span id="availableWorkersDisplay"></span></div>
+            <div>Daya Tersedia: <span id="powerDisplay"></span></div>
         </div>
         
         <div class="w-full p-2 bg-slate-200 rounded-lg shadow-inner mt-2">
@@ -276,7 +279,8 @@
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
             <li><strong>Uang dan Populasi:</strong> Perhatikan panel di atas kanvas untuk melihat uang dan populasi Anda saat ini. Bangun rumah untuk meningkatkan populasi, dan bangun toko atau industri untuk memberikan lapangan pekerjaan bagi populasi.</li>
             <li><strong>Pekerja:</strong> Bangunan bisnis hanya akan menghasilkan uang jika Anda memiliki cukup populasi untuk mengisi semua posisi pekerjaan yang tersedia.</li>
-            <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan.</li>
+            <li><strong>Koneksi Jalan:</strong> Pastikan bangunan Anda terhubung ke jalan agar warga dan bisnis lebih bahagia dan menguntungkan. Koneksi ini juga penting untuk mendapatkan akses ke pasokan listrik dari Pembangkit Listrik.</li>
+            <li><strong>Kebutuhan Listrik:</strong> Bangunan seperti Toko, Industri, dan Rumah Sakit membutuhkan listrik untuk beroperasi. Anda harus membangun **Pembangkit Listrik** untuk memenuhi kebutuhan ini. Pendapatan dari pembangkit listrik berasal dari penjualan listrik ke bangunan lain.</li>
             <li><strong>Mulai Ulang:</strong> Tombol ini akan mereset semua uang, populasi, dan bangunan ke awal permainan. Gunakan jika Anda ingin memulai dari nol.</li>
         </ul>
     </div>
@@ -310,13 +314,16 @@
     let taxRate = 5;
     let isPopupMenuOpen = false;
     let selectedBuilding = null; 
-    
+    let totalPowerOutput = 0;
+    let totalPowerUsage = 0;
+
     // Game constants
     const gridSize = 40;
     const incomeInterval = 1000;
     const incomePerPersonPerSecond = 10;
+    const pricePerUnitPower = 0.5; // New constant
     const influenceRadiusInBlocks = 7;
-    let lastIncomeTime = Date.now(); // CORRECTED SYNTAX ERROR
+    let lastIncomeTime = Date.now();
     const keys = {};
     const touchControls = { up: false, down: false, left: false, right: false };
 
@@ -324,14 +331,14 @@
     const baseIncomePerWorker = {
         store: 16.67,
         industrial: 25.00,
-        powerPlant: 40.00 // New
+        powerPlant: 0 // No longer earns income from workers
     };
 
     const buildingStats = {
         house: { cost: 100, populationCapacity: 5, name: 'Rumah', color: '#fde047' },
         park: { cost: 50, name: 'Taman', color: '#22c55e', maintenance: 10, influenceRadius: 5 },
-        store: { cost: 200, name: 'Toko', color: '#f59e0b', workersRequired: 3 },
-        industrial: { cost: 300, name: 'Industri', color: '#1f2937', workersRequired: 8 },
+        store: { cost: 200, name: 'Toko', color: '#f59e0b', workersRequired: 3, powerRequired: 10 },
+        industrial: { cost: 300, name: 'Industri', color: '#1f2937', workersRequired: 8, powerRequired: 25 },
         road: { cost: 20, name: 'Jalan', color: '#64748b', maintenance: 1.5 },
         hospital: {
             cost: 500,
@@ -340,9 +347,10 @@
             maintenance: 30,
             patientCapacity: 100,
             treatmentCost: 10,
-            influenceRadius: 10
+            influenceRadius: 10,
+            powerRequired: 20
         },
-        powerPlant: { cost: 750, name: 'Pembangkit Listrik', color: '#c4b5fd', workersRequired: 15, maintenance: 50 }
+        powerPlant: { cost: 750, name: 'Pembangkit Listrik', color: '#c4b5fd', workersRequired: 15, maintenance: 50, powerOutput: 100 }
     };
     
     // UI elements
@@ -351,6 +359,7 @@
     const moneyDisplay = document.getElementById('moneyDisplay');
     const populationDisplay = document.getElementById('populationDisplay');
     const availableWorkersDisplay = document.getElementById('availableWorkersDisplay');
+    const powerDisplay = document.getElementById('powerDisplay'); // New UI element
     const taxRateDisplay = document.getElementById('taxRateDisplay');
     const taxRateSlider = document.getElementById('taxRateSlider');
     const infoModal = document.getElementById('infoModal');
@@ -431,7 +440,7 @@
         });
     }
 
-    // Function to calculate building needs and bonuses (UPDATED for worker system)
+    // Function to calculate building needs and bonuses
     function calculateNeeds() {
         const influentialBuildings = buildings.filter(b => buildingStats[b.type].influenceRadius);
 
@@ -474,6 +483,8 @@
             <p>Posisi: (${Math.floor(building.x/gridSize)}, ${Math.floor(building.y/gridSize)})</p>
         `;
         const stats = buildingStats[building.type];
+        const isPowered = building.isPowered;
+
         if (building.type === 'house') {
             infoText += `<p>Populasi: ${building.population} orang</p>`;
             infoText += `<p>Kapasitas Maks: ${stats.populationCapacity} orang</p>`;
@@ -481,17 +492,27 @@
             const taxPerHouse = (building.population * incomePerPersonPerSecond) * (taxRate / 100);
             infoText += `<p>Pajak Bangunan: ${formatRupiah(taxPerHouse)}/detik</p>`;
         } else if (stats.workersRequired) {
+            infoText += `<p>Status Listrik: ${isPowered ? 'Tersedia' : 'Tidak Tersedia'}</p>`;
             infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
             infoText += `<p>Pekerja Ditugaskan: ${building.workersAssigned || 0}</p>`;
             const taxGain = (baseIncomePerWorker[building.type] * (building.workersAssigned || 0)) * (taxRate / 100);
             infoText += `<p>Pajak Bangunan: ${formatRupiah(taxGain)}/detik</p>`;
         } else if (building.type === 'hospital') {
+            infoText += `<p>Status Listrik: ${isPowered ? 'Tersedia' : 'Tidak Tersedia'}</p>`;
             infoText += `<p>Kapasitas Pasien: ${stats.patientCapacity} orang</p>`;
             infoText += `<p>Pasien Saat Ini: ${building.currentPatients} orang</p>`;
-            infoText += `<p>Pajak Pengobatan: ${formatRupiah((building.currentPatients || 0) * stats.treatmentCost)}/detik</p>`;
+            const taxGain = (building.currentPatients || 0) * stats.treatmentCost;
+            infoText += `<p>Pajak Pengobatan: ${formatRupiah(taxGain)}/detik</p>`;
+            infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
+        } else if (building.type === 'powerPlant') {
+            infoText += `<p>Kapasitas Daya: ${stats.powerOutput}</p>`;
+            infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
+            infoText += `<p>Pekerja Ditugaskan: ${building.workersAssigned || 0}</p>`;
+            const powerIncome = (building.powerSold || 0) * pricePerUnitPower;
+            infoText += `<p>Pendapatan Jual Daya: ${formatRupiah(powerIncome)}/detik</p>`;
             infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
         }
-        if (stats.maintenance && building.type !== 'hospital') {
+        if (stats.maintenance && building.type !== 'powerPlant' && building.type !== 'hospital') {
             infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
         }
 
@@ -550,6 +571,34 @@
             workersAssigned += workersToAssign;
         }
 
+        // Calculate total power output and usage
+        totalPowerOutput = 0;
+        totalPowerUsage = 0;
+        buildings.filter(b => b.type === 'powerPlant').forEach(p => {
+            if (p.workersAssigned >= buildingStats.powerPlant.workersRequired) {
+                totalPowerOutput += buildingStats.powerPlant.powerOutput;
+            }
+        });
+
+        // Set isPowered status for buildings and calculate total usage
+        buildings.forEach(b => {
+            const stats = buildingStats[b.type];
+            if (stats.powerRequired) {
+                const tileX = Math.floor(b.x / gridSize);
+                const tileY = Math.floor(b.y / gridSize);
+                if (isConnectedToRoad(tileX, tileY) && totalPowerOutput > totalPowerUsage) {
+                    b.isPowered = true;
+                    totalPowerUsage += stats.powerRequired;
+                } else {
+                    b.isPowered = false;
+                }
+            } else {
+                b.isPowered = true;
+            }
+        });
+        
+        powerDisplay.textContent = `${totalPowerUsage} / ${totalPowerOutput}`;
+
         // Calculate income and expenses per second
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
@@ -561,18 +610,23 @@
                 if (b.type === 'house') {
                     totalIncome += b.population * incomePerPersonPerSecond * (taxRate / 100);
                 } else if (stats.workersRequired) {
-                    // Only get income if workers are assigned
-                    if (b.workersAssigned > 0) {
+                    if (b.isPowered && b.workersAssigned > 0) {
                         const taxGain = (baseIncomePerWorker[b.type] * b.workersAssigned) * (taxRate / 100);
                         totalIncome += taxGain;
                     }
                 } else if (b.type === 'hospital') {
-                    const hospitalTax = (b.currentPatients || 0) * stats.treatmentCost;
-                    totalIncome += hospitalTax * (taxRate / 100);
+                    if (b.isPowered) {
+                        const taxGain = (b.currentPatients || 0) * stats.treatmentCost;
+                        totalIncome += taxGain * (taxRate / 100);
+                    }
+                    totalExpenditure += stats.maintenance;
+                } else if (b.type === 'powerPlant') {
+                    b.powerSold = b.isPowered ? totalPowerUsage : 0;
+                    totalIncome += b.powerSold * pricePerUnitPower;
                     totalExpenditure += stats.maintenance;
                 }
                 
-                if (stats.maintenance && b.type !== 'hospital') {
+                if (stats.maintenance && b.type !== 'hospital' && b.type !== 'powerPlant') {
                     totalExpenditure += stats.maintenance;
                 }
             });
@@ -584,7 +638,6 @@
         moneyDisplay.textContent = formatRupiah(money);
         populationDisplay.textContent = population;
         availableWorkersDisplay.textContent = Math.max(0, population - workersAssigned);
-
 
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -737,6 +790,8 @@
         taxRate = 5;
         taxRateDisplay.textContent = taxRate;
         taxRateSlider.value = taxRate;
+        totalPowerOutput = 0;
+        totalPowerUsage = 0;
         updateButtonStyles();
         infoModal.classList.remove('modal-show');
     }
@@ -819,7 +874,8 @@
                             population: stats.populationCapacity || 0,
                             currentPatients: buildingType === 'hospital' ? 0 : null,
                             needs: { happiness: 0 },
-                            workersAssigned: 0
+                            workersAssigned: 0,
+                            isPowered: false // New property for power
                         };
                         
                         buildings.push(newBuilding);
