@@ -672,6 +672,8 @@
 
             if (building.type === 'house') {
                 drawHouse(drawX, drawY, gridSize, gridSize, building.color);
+            } else if (building.type === 'store') {
+                drawStore(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
                 drawPark(drawX, drawY, gridSize, gridSize);
             } else if (building.type === 'road') {
@@ -721,6 +723,38 @@
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(x + width * 0.15, y + height * 0.5, width * 0.2, height * 0.2);
         ctx.fillRect(x + width * 0.65, y + height * 0.5, width * 0.2, height * 0.2);
+    }
+    
+    /**
+     * @param {number} x - X position on canvas.
+     * @param {number} y - Y position on canvas.
+     * @param {number} width - Width of the store.
+     * @param {number} height - Height of the store.
+     * @param {string} color - Color of the store.
+     */
+    function drawStore(x, y, width, height, color) {
+        // Menggambar badan utama bangunan
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y + height * 0.2, width, height * 0.8);
+        ctx.strokeStyle = '#334155';
+        ctx.strokeRect(x, y + height * 0.2, width, height * 0.8);
+
+        // Menggambar atap
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(x, y, width, height * 0.2);
+        
+        // Menggambar cerobong/dekorasi atap
+        ctx.fillStyle = '#6b7280';
+        ctx.fillRect(x + width * 0.8, y, width * 0.1, height * 0.2);
+
+        // Menambahkan jendela
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(x + width * 0.2, y + height * 0.4, width * 0.2, height * 0.2);
+        ctx.fillRect(x + width * 0.6, y + height * 0.4, width * 0.2, height * 0.2);
+        
+        // Menambahkan pintu
+        ctx.fillStyle = '#4a5568';
+        ctx.fillRect(x + width * 0.45, y + height * 0.6, width * 0.1, height * 0.4);
     }
 
     /**
