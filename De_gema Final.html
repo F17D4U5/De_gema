@@ -273,7 +273,22 @@
         </div>
         <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
         <ul class="guide-list mt-4">
-            <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta. Dalam mode ini, klik bangunan untuk melihat informasinya.</li>
+            <li><strong>Pergerakan (Tombol Panah):</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta. Dalam mode ini, klik bangunan untuk melihat informasinya.</li>
+            <li><strong>Pintasan Keyboard:</strong>
+                <ul>
+                    <li>'M' untuk <strong>Mode Pindah</strong></li>
+                    <li>'H' untuk <strong>Bangun Rumah</strong></li>
+                    <li>'P' untuk <strong>Bangun Taman</strong></li>
+                    <li>'T' untuk <strong>Bangun Toko</strong></li>
+                    <li>'I' untuk <strong>Bangun Industri</strong></li>
+                    <li>'J' untuk <strong>Bangun Jalan</strong></li>
+                    <li>'O' untuk <strong>Bangun Rumah Sakit</strong></li>
+                    <li>'L' untuk <strong>Bangun Kincir Angin</strong></li>
+                    <li>'X' untuk <strong>Mode Hancurkan</strong></li>
+                    <li>'G' untuk menampilkan <strong>Panduan</strong> ini</li>
+                    <li>'R' untuk <strong>Mulai Ulang</strong> permainan</li>
+                </ul>
+            </li>
             <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
             <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
@@ -520,12 +535,12 @@
     }
     
     function gameLoop() {
-        // Player movement logic (keyboard and touch)
+        // Player movement logic (only arrow keys)
         let moveX = 0, moveY = 0;
-        if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
-        if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
-        if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-        if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
+        if (keys['arrowup'] || touchControls.up) moveY -= player.speed;
+        if (keys['arrowdown'] || touchControls.down) moveY += player.speed;
+        if (keys['arrowleft'] || touchControls.left) moveX -= player.speed;
+        if (keys['arrowright'] || touchControls.right) moveX += player.speed;
 
         let playerScreenX = player.x - mapOffset.x;
         let playerScreenY = player.y - mapOffset.y;
@@ -982,16 +997,25 @@
     function init() {
         // Event listener for keyboard
         window.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-            if (e.key.toLowerCase() === 'm') setMode('move', null);
-            else if (e.key.toLowerCase() === 'h') setMode('build', 'house');
-            else if (e.key.toLowerCase() === 'p') setMode('build', 'park');
-            else if (e.key.toLowerCase() === 't') setMode('build', 'store');
-            else if (e.key.toLowerCase() === 'i') setMode('build', 'industrial');
-            else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
-            else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
-            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital');
-            else if (e.key.toLowerCase() === 'l') setMode('build', 'windTurbine');
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+            
+            // Player movement using arrow keys only
+            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+                // Do nothing, handled in gameLoop
+            }
+            // Other keyboard shortcuts
+            else if (key === 'm') setMode('move', null);
+            else if (key === 'h') setMode('build', 'house');
+            else if (key === 'p') setMode('build', 'park');
+            else if (key === 't') setMode('build', 'store');
+            else if (key === 'i') setMode('build', 'industrial');
+            else if (key === 'j') setMode('build', 'road'); // Changed from 'r' to 'j'
+            else if (key === 'o') setMode('build', 'hospital');
+            else if (key === 'l') setMode('build', 'windTurbine');
+            else if (key === 'x') setMode('destroy', null);
+            else if (key === 'g') guideModal.classList.add('modal-show'); // Guide shortcut
+            else if (key === 'r') restartGame(); // Restart shortcut
         });
 
         window.addEventListener('keyup', (e) => {
