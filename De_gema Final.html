@@ -93,8 +93,8 @@
             width: 500px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             position: relative;
-            max-height: 80vh; /* Added to enable scrolling */
-            overflow-y: auto; /* Added to enable scrolling */
+            max-height: 80vh;
+            overflow-y: auto;
         }
         .modal-header {
             display: flex;
@@ -626,7 +626,7 @@
                     totalExpenditure += stats.maintenance;
                 }
                 
-                if (stats.maintenance && b.type !== 'hospital' && b.type !== 'powerPlant') {
+                if (stats.maintenance && b.type !== 'powerPlant' && b.type !== 'hospital') {
                     totalExpenditure += stats.maintenance;
                 }
             });
@@ -674,10 +674,10 @@
                 drawHouse(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'store') {
                 drawStore(drawX, drawY, gridSize, gridSize, building.color);
+            } else if (building.type === 'industrial') {
+                drawIndustrial(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
                 drawPark(drawX, drawY, gridSize, gridSize);
-            } else if (building.type === 'road') {
-                ctx.fillRect(drawX, drawY, gridSize, gridSize);
             } else {
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 ctx.strokeStyle = '#334155';
@@ -733,28 +733,64 @@
      * @param {string} color - Color of the store.
      */
     function drawStore(x, y, width, height, color) {
-        // Menggambar badan utama bangunan
+        // Draw the main body of the building
         ctx.fillStyle = color;
         ctx.fillRect(x, y + height * 0.2, width, height * 0.8);
         ctx.strokeStyle = '#334155';
         ctx.strokeRect(x, y + height * 0.2, width, height * 0.8);
 
-        // Menggambar atap
+        // Draw the roof
         ctx.fillStyle = '#334155';
         ctx.fillRect(x, y, width, height * 0.2);
         
-        // Menggambar cerobong/dekorasi atap
+        // Draw the chimney/roof decoration
         ctx.fillStyle = '#6b7280';
         ctx.fillRect(x + width * 0.8, y, width * 0.1, height * 0.2);
 
-        // Menambahkan jendela
+        // Add windows
         ctx.fillStyle = '#94a3b8';
         ctx.fillRect(x + width * 0.2, y + height * 0.4, width * 0.2, height * 0.2);
         ctx.fillRect(x + width * 0.6, y + height * 0.4, width * 0.2, height * 0.2);
         
-        // Menambahkan pintu
+        // Add a door
         ctx.fillStyle = '#4a5568';
         ctx.fillRect(x + width * 0.45, y + height * 0.6, width * 0.1, height * 0.4);
+    }
+
+    /**
+     * Draws an industrial building with a single slanted roof and chimney,
+     * precisely matching the user's reference image.
+     * @param {number} x - X coordinate of the top-left corner of the building.
+     * @param {number} y - Y coordinate of the top-left corner of the building.
+     * @param {number} width - Total width of the building.
+     * @param {number} height - Total height of the building.
+     * @param {string} color - Main color of the building.
+     */
+    function drawIndustrial(x, y, width, height, color) {
+        // Draw the main body of the building, which is a rectangle
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y + height * 0.5, width, height * 0.5);
+
+        // Draw the single-slanted roof
+        ctx.fillStyle = '#4b5563'; // Roof color
+        ctx.beginPath();
+        ctx.moveTo(x, y + height * 0.5);
+        ctx.lineTo(x + width, y + height * 0.2);
+        ctx.lineTo(x + width, y + height * 0.5);
+        ctx.lineTo(x, y + height * 0.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#374151'; // Roof outline
+        ctx.stroke();
+
+        // Draw the tall chimney on the left side of the roof
+        ctx.fillStyle = '#9ca3af'; // Chimney color
+        ctx.fillRect(x + width * 0.1, y + height * 0.15, width * 0.08, height * 0.35);
+
+        // Add windows to the main body
+        ctx.fillStyle = '#d1d5db';
+        ctx.fillRect(x + width * 0.2, y + height * 0.65, width * 0.2, height * 0.15);
+        ctx.fillRect(x + width * 0.6, y + height * 0.65, width * 0.2, height * 0.15);
     }
 
     /**
