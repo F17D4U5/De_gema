@@ -245,7 +245,7 @@
                     <button id="industrialButton" class="action-button" style="background-color: #1f2937;">Bangun Industri</button>
                     <button id="roadButton" class="action-button" style="background-color: #64748b;">Bangun Jalan</button>
                     <button id="hospitalButton" class="action-button" style="background-color: #7b241c;">Bangun Rumah Sakit</button>
-                    <button id="powerPlantButton" class="action-button" style="background-color: #c4b5fd;">Bangun Pembangkit</button>
+                    <button id="windTurbineButton" class="action-button" style="background-color: #3b82f6;">Bangun Kincir Angin</button>
                 </div>
             </div>
             <div class="w-full grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 max-w-full">
@@ -316,12 +316,13 @@
     let selectedBuilding = null; 
     let totalPowerOutput = 0;
     let totalPowerUsage = 0;
+    let windBladeAngle = 0; // For wind turbine animation
 
     // Game constants
     const gridSize = 40;
     const incomeInterval = 1000;
     const incomePerPersonPerSecond = 10;
-    const pricePerUnitPower = 0.5; // New constant
+    const pricePerUnitPower = 0.5;
     const influenceRadiusInBlocks = 7;
     let lastIncomeTime = Date.now();
     const keys = {};
@@ -331,7 +332,7 @@
     const baseIncomePerWorker = {
         store: 16.67,
         industrial: 25.00,
-        powerPlant: 0 // No longer earns income from workers
+        windTurbine: 0
     };
 
     const buildingStats = {
@@ -350,7 +351,7 @@
             influenceRadius: 10,
             powerRequired: 20
         },
-        powerPlant: { cost: 750, name: 'Pembangkit Listrik', color: '#c4b5fd', workersRequired: 15, maintenance: 50, powerOutput: 100 }
+        windTurbine: { cost: 400, name: 'Kincir Angin', color: '#3b82f6', maintenance: 10, powerOutput: 40 }
     };
     
     // UI elements
@@ -359,7 +360,7 @@
     const moneyDisplay = document.getElementById('moneyDisplay');
     const populationDisplay = document.getElementById('populationDisplay');
     const availableWorkersDisplay = document.getElementById('availableWorkersDisplay');
-    const powerDisplay = document.getElementById('powerDisplay'); // New UI element
+    const powerDisplay = document.getElementById('powerDisplay');
     const taxRateDisplay = document.getElementById('taxRateDisplay');
     const taxRateSlider = document.getElementById('taxRateSlider');
     const infoModal = document.getElementById('infoModal');
@@ -380,7 +381,7 @@
         industrial: document.getElementById('industrialButton'),
         road: document.getElementById('roadButton'),
         hospital: document.getElementById('hospitalButton'),
-        powerPlant: document.getElementById('powerPlantButton'), // New button
+        windTurbine: document.getElementById('windTurbineButton'),
     };
     
     const guideButton = document.getElementById('guideButton');
@@ -504,15 +505,13 @@
             const taxGain = (building.currentPatients || 0) * stats.treatmentCost;
             infoText += `<p>Pajak Pengobatan: ${formatRupiah(taxGain)}/detik</p>`;
             infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
-        } else if (building.type === 'powerPlant') {
-            infoText += `<p>Kapasitas Daya: ${stats.powerOutput}</p>`;
-            infoText += `<p>Pekerja Dibutuhkan: ${stats.workersRequired}</p>`;
-            infoText += `<p>Pekerja Ditugaskan: ${building.workersAssigned || 0}</p>`;
+        } else if (building.type === 'windTurbine') {
             const powerIncome = (building.powerSold || 0) * pricePerUnitPower;
+            infoText += `<p>Kapasitas Daya: ${stats.powerOutput}</p>`;
             infoText += `<p>Pendapatan Jual Daya: ${formatRupiah(powerIncome)}/detik</p>`;
             infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
         }
-        if (stats.maintenance && building.type !== 'powerPlant' && building.type !== 'hospital') {
+        if (stats.maintenance && building.type !== 'windTurbine' && building.type !== 'hospital') {
             infoText += `<p>Biaya Perawatan: ${formatRupiah(stats.maintenance)}/detik</p>`;
         }
 
@@ -574,10 +573,8 @@
         // Calculate total power output and usage
         totalPowerOutput = 0;
         totalPowerUsage = 0;
-        buildings.filter(b => b.type === 'powerPlant').forEach(p => {
-            if (p.workersAssigned >= buildingStats.powerPlant.workersRequired) {
-                totalPowerOutput += buildingStats.powerPlant.powerOutput;
-            }
+        buildings.filter(b => b.type === 'windTurbine').forEach(p => {
+            totalPowerOutput += buildingStats.windTurbine.powerOutput;
         });
 
         // Set isPowered status for buildings and calculate total usage
@@ -598,6 +595,9 @@
         });
         
         powerDisplay.textContent = `${totalPowerUsage} / ${totalPowerOutput}`;
+        
+        // Animate wind turbine blades
+        windBladeAngle = (windBladeAngle + 0.05) % (Math.PI * 2);
 
         // Calculate income and expenses per second
         if (Date.now() - lastIncomeTime > incomeInterval) {
@@ -620,13 +620,13 @@
                         totalIncome += taxGain * (taxRate / 100);
                     }
                     totalExpenditure += stats.maintenance;
-                } else if (b.type === 'powerPlant') {
+                } else if (b.type === 'windTurbine') {
                     b.powerSold = b.isPowered ? totalPowerUsage : 0;
                     totalIncome += b.powerSold * pricePerUnitPower;
                     totalExpenditure += stats.maintenance;
                 }
                 
-                if (stats.maintenance && b.type !== 'powerPlant' && b.type !== 'hospital') {
+                if (stats.maintenance && b.type !== 'windTurbine' && b.type !== 'hospital') {
                     totalExpenditure += stats.maintenance;
                 }
             });
@@ -678,6 +678,10 @@
                 drawIndustrial(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
                 drawPark(drawX, drawY, gridSize, gridSize);
+            } else if (building.type === 'hospital') {
+                drawHospital(drawX, drawY, gridSize, gridSize, building.color);
+            } else if (building.type === 'windTurbine') {
+                drawWindTurbine(drawX, drawY, gridSize, gridSize);
             } else {
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 ctx.strokeStyle = '#334155';
@@ -792,7 +796,7 @@
         ctx.fillRect(x + width * 0.2, y + height * 0.65, width * 0.2, height * 0.15);
         ctx.fillRect(x + width * 0.6, y + height * 0.65, width * 0.2, height * 0.15);
     }
-
+    
     /**
      * Draws a simple green box for a park.
      * @param {number} x - X position on canvas.
@@ -804,7 +808,116 @@
         ctx.fillStyle = '#22c55e'; 
         ctx.fillRect(x, y, width, height);
     }
+    
+    /**
+     * Draws a hospital building based on the user's provided reference image,
+     * with the color corrected and the small top corners removed.
+     * @param {number} x - X position on canvas.
+     * @param {number} y - Y position on canvas.
+     * @param {number} width - Width of the building.
+     * @param {number} height - Height of the building.
+     * @param {string} color - Main color of the building.
+     */
+    function drawHospital(x, y, width, height, color) {
+        // Set the main color for the building body
+        ctx.fillStyle = color;
 
+        // Draw the main rectangular body of the building
+        ctx.fillRect(x + width * 0.1, y + height * 0.2, width * 0.8, height * 0.8);
+        
+        // Draw the roof platform
+        ctx.fillRect(x + width * 0.1, y + height * 0.1, width * 0.8, height * 0.1);
+
+        // Draw the white sign on top
+        ctx.fillStyle = '#ffffff';
+        const signWidth = width * 0.4;
+        const signHeight = height * 0.2;
+        const signX = x + (width - signWidth) / 2;
+        const signY = y;
+        ctx.fillRect(signX, signY, signWidth, signHeight);
+
+        // Draw the red cross on the sign
+        ctx.fillStyle = '#a71c1c';
+        const crossSize = Math.min(signWidth, signHeight) * 0.7;
+        const crossX = signX + (signWidth - crossSize) / 2;
+        const crossY = signY + (signHeight - crossSize) / 2;
+        // Vertical part of the cross
+        ctx.fillRect(crossX + crossSize * 0.4, crossY, crossSize * 0.2, crossSize);
+        // Horizontal part of the cross
+        ctx.fillRect(crossX, crossY + crossSize * 0.4, crossSize, crossSize * 0.2);
+
+        // Draw the door
+        ctx.fillStyle = '#ffffff';
+        const doorWidth = width * 0.2;
+        const doorHeight = height * 0.2;
+        const doorX = x + (width - doorWidth) / 2;
+        const doorY = y + height * 0.8;
+        ctx.fillRect(doorX, doorY, doorWidth, doorHeight);
+        
+        // Draw the windows
+        const windowWidth = width * 0.2;
+        const windowHeight = height * 0.15;
+        ctx.fillRect(x + width * 0.15, y + height * 0.25, windowWidth, windowHeight);
+        ctx.fillRect(x + width * 0.65, y + height * 0.25, windowWidth, windowHeight);
+        ctx.fillRect(x + width * 0.15, y + height * 0.5, windowWidth, windowHeight);
+        ctx.fillRect(x + width * 0.65, y + height * 0.5, windowWidth, windowHeight);
+    }
+    
+    /**
+     * Draws a wind turbine with a rotating blade.
+     * @param {number} x - X coordinate of the top-left corner of the building.
+     * @param {number} y - Y coordinate of the top-left corner of the building.
+     * @param {number} width - Total width of the building.
+     * @param {number} height - Total height of the building.
+     */
+    function drawWindTurbine(x, y, width, height) {
+        // Base of the turbine
+        const baseX = x + width * 0.4;
+        const baseY = y + height * 0.8;
+        ctx.fillStyle = '#a0a0a0';
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        ctx.lineTo(baseX + width * 0.2, baseY);
+        ctx.lineTo(baseX + width * 0.15, y + height * 0.6);
+        ctx.lineTo(baseX + width * 0.05, y + height * 0.6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Tower
+        const towerX = x + width * 0.45;
+        const towerY = y + height * 0.6;
+        const towerWidth = width * 0.1;
+        const towerHeight = height * 0.4;
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillRect(towerX, towerY, towerWidth, towerHeight);
+
+        // Hub for the blades
+        const hubX = towerX + towerWidth / 2;
+        const hubY = towerY - height * 0.05;
+        ctx.fillStyle = '#4b5563';
+        ctx.beginPath();
+        ctx.arc(hubX, hubY, width * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rotating blades
+        const bladeLength = width * 0.4;
+        const bladeWidth = width * 0.07;
+        const bladeOffset = Math.PI * 2 / 3;
+
+        for (let i = 0; i < 3; i++) {
+            ctx.save();
+            ctx.translate(hubX, hubY);
+            ctx.rotate(windBladeAngle + i * bladeOffset);
+            ctx.fillStyle = '#6b7280';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(bladeLength * 0.5, -bladeWidth / 2, bladeLength, 0);
+            ctx.quadraticCurveTo(bladeLength * 0.5, bladeWidth / 2, 0, 0);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+    
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
         if (isPopupMenuOpen) {
@@ -878,7 +991,7 @@
             else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
             else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
             else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital');
-            else if (e.key.toLowerCase() === 'l') setMode('build', 'powerPlant');
+            else if (e.key.toLowerCase() === 'l') setMode('build', 'windTurbine');
         });
 
         window.addEventListener('keyup', (e) => {
@@ -945,12 +1058,16 @@
                             currentPatients: buildingType === 'hospital' ? 0 : null,
                             needs: { happiness: 0 },
                             workersAssigned: 0,
-                            isPowered: false // New property for power
+                            isPowered: false
                         };
                         
                         buildings.push(newBuilding);
                         money -= cost;
                         calculateNeeds();
+                    } else if (existingBuilding) {
+                        showMessage('Lokasi ini sudah terisi!');
+                    } else if (money < cost) {
+                        showMessage('Uang tidak cukup!');
                     }
                 } else if (activeMode === 'destroy') {
                     const buildingIndex = buildings.findIndex(b =>
@@ -960,6 +1077,7 @@
                         const destroyedBuilding = buildings.splice(buildingIndex, 1)[0];
                         const refund = buildingStats[destroyedBuilding.type].cost * 0.5;
                         money += refund;
+                        showMessage(`Bangunan dihancurkan! Uang dikembalikan: ${formatRupiah(refund)}.`);
                         calculateNeeds();
                     }
                 }
