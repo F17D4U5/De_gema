@@ -273,7 +273,22 @@
         </div>
         <p>Selamat datang! Ini adalah simulasi pembangunan kota sederhana. Berikut panduan dasar untuk memulai:</p>
         <ul class="guide-list mt-4">
-            <li><strong>Mode Pindah:</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta. Dalam mode ini, klik bangunan untuk melihat informasinya.</li>
+            <li><strong>Pergerakan (Tombol Panah):</strong> Gunakan tombol panah di keyboard, atau tombol panah di layar sentuh, untuk menggerakkan pemain (kotak merah) dan menjelajahi peta. Dalam mode ini, klik bangunan untuk melihat informasinya.</li>
+            <li><strong>Pintasan Keyboard:</strong>
+                <ul>
+                    <li>'M' untuk <strong>Mode Pindah</strong></li>
+                    <li>'H' untuk <strong>Bangun Rumah</strong></li>
+                    <li>'P' untuk <strong>Bangun Taman</strong></li>
+                    <li>'T' untuk <strong>Bangun Toko</strong></li>
+                    <li>'I' untuk <strong>Bangun Industri</strong></li>
+                    <li>'J' untuk <strong>Bangun Jalan</strong></li>
+                    <li>'O' untuk <strong>Bangun Rumah Sakit</strong></li>
+                    <li>'L' untuk <strong>Bangun Kincir Angin</strong></li>
+                    <li>'X' untuk <strong>Mode Hancurkan</strong></li>
+                    <li>'G' untuk menampilkan <strong>Panduan</strong> ini</li>
+                    <li>'R' untuk <strong>Mulai Ulang</strong> permainan</li>
+                </ul>
+            </li>
             <li><strong>Membangun Bangunan:</strong> Pilih salah satu tombol bangunan lalu klik di kanvas untuk membangunnya. Pastikan Anda memiliki cukup uang!</li>
             <li><strong>Mode Hancurkan:</strong> Pilih tombol Hancurkan, lalu klik di bangunan yang ingin Anda hancurkan. Anda akan mendapatkan setengah dari biaya bangunan kembali.</li>
             <li><strong>Tingkat Pajak:</strong> Sesuaikan tingkat pajak dengan penggeser di bawah kanvas. Tingkat pajak yang lebih tinggi akan meningkatkan uang Anda, tetapi bisa membuat populasi turun.</li>
@@ -520,12 +535,12 @@
     }
     
     function gameLoop() {
-        // Player movement logic (keyboard and touch)
+        // Player movement logic (only arrow keys)
         let moveX = 0, moveY = 0;
-        if (keys['arrowup'] || keys['w'] || touchControls.up) moveY -= player.speed;
-        if (keys['arrowdown'] || keys['s'] || touchControls.down) moveY += player.speed;
-        if (keys['arrowleft'] || keys['a'] || touchControls.left) moveX -= player.speed;
-        if (keys['arrowright'] || keys['d'] || touchControls.right) moveX += player.speed;
+        if (keys['arrowup'] || touchControls.up) moveY -= player.speed;
+        if (keys['arrowdown'] || touchControls.down) moveY += player.speed;
+        if (keys['arrowleft'] || touchControls.left) moveX -= player.speed;
+        if (keys['arrowright'] || touchControls.right) moveX += player.speed;
 
         let playerScreenX = player.x - mapOffset.x;
         let playerScreenY = player.y - mapOffset.y;
@@ -682,6 +697,8 @@
                 drawHospital(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'windTurbine') {
                 drawWindTurbine(drawX, drawY, gridSize, gridSize);
+            } else if (building.type === 'road') {
+                drawRoad(building.x, building.y, gridSize, gridSize, building.color);
             } else {
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 ctx.strokeStyle = '#334155';
@@ -918,6 +935,96 @@
         }
     }
     
+    /**
+     * Draws the road with dynamic visual cues based on its neighbors.
+     * @param {number} x - World X position of the road.
+     * @param {number} y - World Y position of the road.
+     * @param {number} width - Width of the road block.
+     * @param {number} height - Height of the road block.
+     * @param {string} color - Color of the road.
+     */
+    function drawRoad(x, y, width, height, color) {
+        const drawX = x - mapOffset.x;
+        const drawY = y - mapOffset.y;
+        const tileX = Math.floor(x / gridSize);
+        const tileY = Math.floor(y / gridSize);
+        const stripeColor = '#f8fafc';
+
+        // Draw the base road block
+        ctx.fillStyle = color;
+        ctx.fillRect(drawX, drawY, width, height);
+
+        // Check for neighboring road blocks
+        const hasTopNeighbor = findBuilding(tileX, tileY - 1)?.type === 'road';
+        const hasBottomNeighbor = findBuilding(tileX, tileY + 1)?.type === 'road';
+        const hasLeftNeighbor = findBuilding(tileX - 1, tileY)?.type === 'road';
+        const hasRightNeighbor = findBuilding(tileX + 1, tileY)?.type === 'road';
+        
+        // Count neighbors to determine if it's an intersection
+        const neighborCount = [hasTopNeighbor, hasBottomNeighbor, hasLeftNeighbor, hasRightNeighbor].filter(Boolean).length;
+
+        // Don't draw lines on intersections (3 or 4 connections)
+        if (neighborCount >= 3) {
+            return;
+        }
+
+        // Helper to draw a dashed line
+        function drawDashedLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]); // Set dash pattern
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = stripeColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash pattern
+        }
+
+        // --- Logic for drawing based on connections (excluding intersections) ---
+        if (hasTopNeighbor && hasBottomNeighbor) {
+            // Vertical road
+            drawDashedLine(drawX + width / 2, drawY, drawX + width / 2, drawY + height);
+        } else if (hasLeftNeighbor && hasRightNeighbor) {
+            // Horizontal road
+            drawDashedLine(drawX, drawY + height / 2, drawX + width, drawY + height / 2);
+        } else {
+            // Corner or dead-end
+            const centerX = drawX + width / 2;
+            const centerY = drawY + height / 2;
+            const lineLength = width / 2;
+
+            if (hasTopNeighbor && hasRightNeighbor) {
+                // Top-right corner
+                drawDashedLine(centerX, drawY, centerX, centerY);
+                drawDashedLine(centerX, centerY, drawX + width, centerY);
+            } else if (hasRightNeighbor && hasBottomNeighbor) {
+                // Right-bottom corner
+                drawDashedLine(centerX, centerY, drawX + width, centerY);
+                drawDashedLine(centerX, centerY, centerX, drawY + height);
+            } else if (hasBottomNeighbor && hasLeftNeighbor) {
+                // Bottom-left corner
+                drawDashedLine(centerX, centerY, centerX, drawY + height);
+                drawDashedLine(drawX, centerY, centerX, centerY);
+            } else if (hasLeftNeighbor && hasTopNeighbor) {
+                // Left-top corner
+                drawDashedLine(drawX, centerY, centerX, centerY);
+                drawDashedLine(centerX, drawY, centerX, centerY);
+            } else if (hasTopNeighbor) {
+                // Dead end top
+                drawDashedLine(centerX, centerY, centerX, drawY);
+            } else if (hasBottomNeighbor) {
+                // Dead end bottom
+                drawDashedLine(centerX, centerY, centerX, drawY + height);
+            } else if (hasLeftNeighbor) {
+                // Dead end left
+                drawDashedLine(drawX, centerY, centerX, centerY);
+            } else if (hasRightNeighbor) {
+                // Dead end right
+                drawDashedLine(centerX, centerY, drawX + width, centerY);
+            }
+        }
+    }
+    
     function togglePopupMenu() {
         isPopupMenuOpen = !isPopupMenuOpen;
         if (isPopupMenuOpen) {
@@ -934,28 +1041,31 @@
         }
         updateButtonStyles();
         if (newMode === 'build') {
-            togglePopupMenu();
+            if (!isPopupMenuOpen) togglePopupMenu();
+        } else {
+            if (isPopupMenuOpen) togglePopupMenu();
         }
     }
     
     function updateButtonStyles() {
         moveModeButton.classList.remove('mode-active');
         destroyModeButton.classList.remove('mode-active');
-        buildMenuButton.classList.remove('mode-active');
         
+        // Remove active class from all building buttons
         for (const btn in buildingButtons) {
             const buttonEl = buildingButtons[btn];
             if (buttonEl) {
                 buttonEl.classList.remove('mode-active');
             }
         }
-
+        
+        // Re-apply active class based on current mode and type
         if (activeMode === 'move') {
             moveModeButton.classList.add('mode-active');
         } else if (activeMode === 'destroy') {
             destroyModeButton.classList.add('mode-active');
         } else if (activeMode === 'build' && buildingType) {
-            buildMenuButton.classList.add('mode-active');
+            // Note: We don't activate the main 'Bangun' button, just the specific building button
             if (buildingButtons[buildingType]) {
                 buildingButtons[buildingType].classList.add('mode-active');
             }
@@ -982,16 +1092,31 @@
     function init() {
         // Event listener for keyboard
         window.addEventListener('keydown', (e) => {
-            keys[e.key.toLowerCase()] = true;
-            if (e.key.toLowerCase() === 'm') setMode('move', null);
-            else if (e.key.toLowerCase() === 'h') setMode('build', 'house');
-            else if (e.key.toLowerCase() === 'p') setMode('build', 'park');
-            else if (e.key.toLowerCase() === 't') setMode('build', 'store');
-            else if (e.key.toLowerCase() === 'i') setMode('build', 'industrial');
-            else if (e.key.toLowerCase() === 'r') setMode('build', 'road');
-            else if (e.key.toLowerCase() === 'x') setMode('destroy', null);
-            else if (e.key.toLowerCase() === 'o') setMode('build', 'hospital');
-            else if (e.key.toLowerCase() === 'l') setMode('build', 'windTurbine');
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+            
+            // Check for mode change shortcuts
+            if (key === 'm') {
+                setMode('move', null);
+            } else if (key === 'x') {
+                setMode('destroy', null);
+            }
+            
+            // Check for build shortcuts
+            if (key === 'h') setMode('build', 'house');
+            else if (key === 'p') setMode('build', 'park');
+            else if (key === 't') setMode('build', 'store');
+            else if (key === 'i') setMode('build', 'industrial');
+            else if (key === 'j') setMode('build', 'road');
+            else if (key === 'o') setMode('build', 'hospital');
+            else if (key === 'l') setMode('build', 'windTurbine');
+
+            // Check for other shortcuts
+            else if (key === 'g') {
+                guideModal.classList.add('modal-show');
+            } else if (key === 'r') {
+                restartGame();
+            }
         });
 
         window.addEventListener('keyup', (e) => {
@@ -1095,11 +1220,9 @@
         buildMenuButton.addEventListener('click', togglePopupMenu);
         moveModeButton.addEventListener('click', () => {
             setMode('move', null);
-            if (isPopupMenuOpen) togglePopupMenu();
         });
         destroyModeButton.addEventListener('click', () => {
             setMode('destroy', null);
-            if (isPopupMenuOpen) togglePopupMenu();
         });
         restartButton.addEventListener('click', restartGame);
 
@@ -1125,7 +1248,6 @@
         for (const type in buildingButtons) {
             buildingButtons[type].addEventListener('click', () => {
                 setMode('build', type);
-                togglePopupMenu();
             });
         }
 
