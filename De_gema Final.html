@@ -697,6 +697,8 @@
                 drawHospital(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'windTurbine') {
                 drawWindTurbine(drawX, drawY, gridSize, gridSize);
+            } else if (building.type === 'road') {
+                drawRoad(building.x, building.y, gridSize, gridSize, building.color);
             } else {
                 ctx.fillRect(drawX, drawY, gridSize, gridSize);
                 ctx.strokeStyle = '#334155';
@@ -930,6 +932,96 @@
             ctx.quadraticCurveTo(bladeLength * 0.5, bladeWidth / 2, 0, 0);
             ctx.fill();
             ctx.restore();
+        }
+    }
+    
+    /**
+     * Draws the road with dynamic visual cues based on its neighbors.
+     * @param {number} x - World X position of the road.
+     * @param {number} y - World Y position of the road.
+     * @param {number} width - Width of the road block.
+     * @param {number} height - Height of the road block.
+     * @param {string} color - Color of the road.
+     */
+    function drawRoad(x, y, width, height, color) {
+        const drawX = x - mapOffset.x;
+        const drawY = y - mapOffset.y;
+        const tileX = Math.floor(x / gridSize);
+        const tileY = Math.floor(y / gridSize);
+        const stripeColor = '#f8fafc';
+
+        // Draw the base road block
+        ctx.fillStyle = color;
+        ctx.fillRect(drawX, drawY, width, height);
+
+        // Check for neighboring road blocks
+        const hasTopNeighbor = findBuilding(tileX, tileY - 1)?.type === 'road';
+        const hasBottomNeighbor = findBuilding(tileX, tileY + 1)?.type === 'road';
+        const hasLeftNeighbor = findBuilding(tileX - 1, tileY)?.type === 'road';
+        const hasRightNeighbor = findBuilding(tileX + 1, tileY)?.type === 'road';
+        
+        // Count neighbors to determine if it's an intersection
+        const neighborCount = [hasTopNeighbor, hasBottomNeighbor, hasLeftNeighbor, hasRightNeighbor].filter(Boolean).length;
+
+        // Don't draw lines on intersections (3 or 4 connections)
+        if (neighborCount >= 3) {
+            return;
+        }
+
+        // Helper to draw a dashed line
+        function drawDashedLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]); // Set dash pattern
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = stripeColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash pattern
+        }
+
+        // --- Logic for drawing based on connections (excluding intersections) ---
+        if (hasTopNeighbor && hasBottomNeighbor) {
+            // Vertical road
+            drawDashedLine(drawX + width / 2, drawY, drawX + width / 2, drawY + height);
+        } else if (hasLeftNeighbor && hasRightNeighbor) {
+            // Horizontal road
+            drawDashedLine(drawX, drawY + height / 2, drawX + width, drawY + height / 2);
+        } else {
+            // Corner or dead-end
+            const centerX = drawX + width / 2;
+            const centerY = drawY + height / 2;
+            const lineLength = width / 2;
+
+            if (hasTopNeighbor && hasRightNeighbor) {
+                // Top-right corner
+                drawDashedLine(centerX, drawY, centerX, centerY);
+                drawDashedLine(centerX, centerY, drawX + width, centerY);
+            } else if (hasRightNeighbor && hasBottomNeighbor) {
+                // Right-bottom corner
+                drawDashedLine(centerX, centerY, drawX + width, centerY);
+                drawDashedLine(centerX, centerY, centerX, drawY + height);
+            } else if (hasBottomNeighbor && hasLeftNeighbor) {
+                // Bottom-left corner
+                drawDashedLine(centerX, centerY, centerX, drawY + height);
+                drawDashedLine(drawX, centerY, centerX, centerY);
+            } else if (hasLeftNeighbor && hasTopNeighbor) {
+                // Left-top corner
+                drawDashedLine(drawX, centerY, centerX, centerY);
+                drawDashedLine(centerX, drawY, centerX, centerY);
+            } else if (hasTopNeighbor) {
+                // Dead end top
+                drawDashedLine(centerX, centerY, centerX, drawY);
+            } else if (hasBottomNeighbor) {
+                // Dead end bottom
+                drawDashedLine(centerX, centerY, centerX, drawY + height);
+            } else if (hasLeftNeighbor) {
+                // Dead end left
+                drawDashedLine(drawX, centerY, centerX, centerY);
+            } else if (hasRightNeighbor) {
+                // Dead end right
+                drawDashedLine(centerX, centerY, drawX + width, centerY);
+            }
         }
     }
     
