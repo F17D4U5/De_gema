@@ -331,7 +331,6 @@
     let selectedBuilding = null; 
     let totalPowerOutput = 0;
     let totalPowerUsage = 0;
-    let windBladeAngle = 0; // For wind turbine animation
 
     // Game constants
     const gridSize = 40;
@@ -611,9 +610,6 @@
         
         powerDisplay.textContent = `${totalPowerUsage} / ${totalPowerOutput}`;
         
-        // Animate wind turbine blades
-        windBladeAngle = (windBladeAngle + 0.05) % (Math.PI * 2);
-
         // Calculate income and expenses per second
         if (Date.now() - lastIncomeTime > incomeInterval) {
             let totalIncome = 0;
@@ -657,11 +653,13 @@
         ctx.fillStyle = '#f8fafc';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // Draw the grid lines
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
         const screenGridSizeX = Math.ceil(canvas.width / gridSize) + 1;
         const screenGridSizeY = Math.ceil(canvas.height / gridSize) + 1;
         
+        // Draw vertical lines
         for (let x = 0; x < screenGridSizeX; x++) {
             const drawX = (x * gridSize) - (mapOffset.x % gridSize);
             ctx.beginPath();
@@ -670,11 +668,12 @@
             ctx.stroke();
         }
         
+        // Draw horizontal lines
         for (let y = 0; y < screenGridSizeY; y++) {
             const drawY = (y * gridSize) - (mapOffset.y % gridSize);
             ctx.beginPath();
             ctx.moveTo(0, drawY);
-            ctx.lineTo(canvas.width, drawY); 
+            ctx.lineTo(canvas.width, drawY);
             ctx.stroke();
         }
         
@@ -692,7 +691,7 @@
             } else if (building.type === 'industrial') {
                 drawIndustrial(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'park') {
-                drawPark(drawX, drawY, gridSize, gridSize);
+                drawPark(drawX, drawY, gridSize, gridSize, building.flowers);
             } else if (building.type === 'hospital') {
                 drawHospital(drawX, drawY, gridSize, gridSize, building.color);
             } else if (building.type === 'windTurbine') {
@@ -815,15 +814,39 @@
     }
     
     /**
-     * Draws a simple green box for a park.
+     * Draws a park with static flowers.
      * @param {number} x - X position on canvas.
      * @param {number} y - Y position on canvas.
      * @param {number} width - Width of the park.
      * @param {number} height - Height of the park.
+     * @param {Array} flowers - The array of flower data to draw.
      */
-    function drawPark(x, y, width, height) {
-        ctx.fillStyle = '#22c55e'; 
-        ctx.fillRect(x, y, width, height);
+    function drawPark(x, y, width, height, flowers) {
+        // Draw the thin green ground strip
+        const grassHeight = 2;
+        ctx.fillStyle = '#4CAF50';
+        ctx.fillRect(x, y + height - grassHeight, width, grassHeight);
+        
+        // Draw the flowers based on the pre-calculated data
+        flowers.forEach(flower => {
+            // Draw stem as a line
+            ctx.strokeStyle = flower.stemColor;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + flower.x, y + flower.y);
+            ctx.lineTo(x + flower.x, y + flower.y - flower.height); 
+            ctx.stroke();
+
+            // Draw flower head
+            ctx.fillStyle = flower.headColor;
+            if (flower.type === 'circle') {
+                ctx.beginPath();
+                ctx.arc(x + flower.x, y + flower.y - flower.height, flower.headSize, 0, 2 * Math.PI);
+                ctx.fill();
+            } else if (flower.type === 'square') {
+                ctx.fillRect(x + flower.x - flower.headSize/2, y + flower.y - flower.height - flower.headSize/2, flower.headSize, flower.headSize);
+            }
+        });
     }
     
     /**
@@ -881,7 +904,7 @@
     }
     
     /**
-     * Draws a wind turbine with a rotating blade.
+     * Draws a wind turbine with a spinning blade animation.
      * @param {number} x - X coordinate of the top-left corner of the building.
      * @param {number} y - Y coordinate of the top-left corner of the building.
      * @param {number} width - Total width of the building.
@@ -911,28 +934,24 @@
         // Hub for the blades
         const hubX = towerX + towerWidth / 2;
         const hubY = towerY - height * 0.05;
+
+        // --- Animated Blades ---
+        ctx.save();
+        ctx.translate(hubX, hubY);
+        const rotationAngle = (Date.now() / 500) % (2 * Math.PI);
+        ctx.rotate(rotationAngle);
+        const bladeWidth = width * 0.07;
+        const bladeLength = width * 0.4;
+        ctx.fillStyle = '#6b7280';
+        ctx.fillRect(-bladeLength, -bladeWidth / 2, bladeLength * 2, bladeWidth);
+        ctx.fillRect(-bladeWidth / 2, -bladeLength, bladeWidth, bladeLength * 2);
+        ctx.restore();
+
+        // Redraw hub on top of blades
         ctx.fillStyle = '#4b5563';
         ctx.beginPath();
         ctx.arc(hubX, hubY, width * 0.05, 0, Math.PI * 2);
         ctx.fill();
-
-        // Rotating blades
-        const bladeLength = width * 0.4;
-        const bladeWidth = width * 0.07;
-        const bladeOffset = Math.PI * 2 / 3;
-
-        for (let i = 0; i < 3; i++) {
-            ctx.save();
-            ctx.translate(hubX, hubY);
-            ctx.rotate(windBladeAngle + i * bladeOffset);
-            ctx.fillStyle = '#6b7280';
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.quadraticCurveTo(bladeLength * 0.5, -bladeWidth / 2, bladeLength, 0);
-            ctx.quadraticCurveTo(bladeLength * 0.5, bladeWidth / 2, 0, 0);
-            ctx.fill();
-            ctx.restore();
-        }
     }
     
     /**
@@ -1185,6 +1204,30 @@
                             workersAssigned: 0,
                             isPowered: false
                         };
+                        
+                        // For parks, pre-calculate the static flower positions
+                        if (buildingType === 'park') {
+                            newBuilding.flowers = [];
+                            const flowerTypes = [
+                                { stemColor: '#8B4513', headColor: '#FF6347', height: 10, headSize: 4, type: 'circle' },
+                                { stemColor: '#228B22', headColor: '#DA70D6', height: 14, headSize: 5, type: 'square' },
+                                { stemColor: '#6B8E23', headColor: '#ADD8E6', height: 12, headSize: 6, type: 'circle' },
+                                { stemColor: '#556B2F', headColor: '#FFA07A', height: 16, headSize: 3, type: 'square' }
+                            ];
+                            const numFlowers = Math.floor(gridSize / 10);
+                            for (let i = 0; i < numFlowers; i++) {
+                                const flower = flowerTypes[Math.floor(Math.random() * flowerTypes.length)];
+                                newBuilding.flowers.push({
+                                    x: Math.random() * (gridSize - 10) + 5,
+                                    y: gridSize,
+                                    stemColor: flower.stemColor,
+                                    headColor: flower.headColor,
+                                    height: flower.height,
+                                    headSize: flower.headSize,
+                                    type: flower.type
+                                });
+                            }
+                        }
                         
                         buildings.push(newBuilding);
                         money -= cost;
